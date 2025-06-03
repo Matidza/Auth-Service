@@ -30,15 +30,19 @@ const users = [
 
 //Routes
 app.get('/', (req, res) => {
+    console.log(users)
     res.send(users)
 })
 
-app.post('/', (req, res) => {
+
+function getUsers(req, res) {
     const adduser = req.body
     console.log(adduser)
     users.push(adduser)
     res.send(`${adduser.firstName} was added to the DB`)
-})
+}
+
+app.post('/', getUsers)
 
 
 
