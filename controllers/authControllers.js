@@ -1,8 +1,11 @@
 import UserModel from "../models/userModel";
 import signUpSchema from "../middlewares/validators";
 import bcrypt from 'bcrypt';
-import jsonwebtoken from "jsonwebtoken";
+import jwt from "jsonwebtoken";
 import { v4 as uuidv4 } from 'uuid';
+import Dotenv from "dotenv";
+
+Dotenv.config()
 
  export const signUpUsers = async (req,res) => {
     const {email, password} = req.body;
@@ -28,19 +31,19 @@ import { v4 as uuidv4 } from 'uuid';
         password = bcrypt.hashSync(password, salt)
 
         // generate access and refresh token
-
+        const userTokenValue = jwt.sign({
+            fave: 17,
+            
+        }, process.env.ACCESS_TOKEN,)
         // add new User
         const newUser = new UserModel({email, password:password})
-
         const result = await newUser.save();
         result.password = undefined;
-
         res.status(201).json({
             success: true,
             message: "Your account has been created successfully",
             result
         })
-
     }catch (error) {
         console.log(error)
     }
