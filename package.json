@@ -2,6 +2,7 @@
   "name": "auth-service",
   "version": "1.0.0",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "start": "nodemon index.js",
     "dev": "nodemon --trace-warnings index.js"
@@ -11,7 +12,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "bcryptjs": "^3.0.2",
+    "bcrypt": "^6.0.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
@@ -19,7 +20,8 @@
     "helmet": "^8.1.0",
     "joi": "^17.13.3",
     "jsonwebtoken": "^9.0.2",
-    "mongose": "^0.0.2-security",
-    "nodemailer": "^7.0.3"
+    "mongoose": "^8.15.1",
+    "nodemailer": "^7.0.3",
+    "uuid": "^11.1.0"
   }
 }
