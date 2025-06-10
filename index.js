@@ -26,6 +26,17 @@ mongoose.connect(process.env.MONGO_URI).then(() => {
 
 //Routes
 app.use('/api/auth', authroutesRoutes)
+// Global error handler middleware
+app.use((err, req, res, next) => {
+    console.error("\n🔥 Error occurred:", err);
+
+    res.status(err.statusCode || 500).json({
+        success: false,
+        message: err.message || "Something went wrong on the server",
+        stack: process.env.NODE_ENV !== "production" ? err.stack : undefined
+    });
+});
+
 
 app.listen(PORT, () => { //process.env.PORT
     console.log(`\nServer running on port: http://localhost:${PORT}\n`)

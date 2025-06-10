@@ -6,14 +6,12 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
+
 /**
  * Sign up a new user
  * 
  * This function registers a new user by validating input, checking for duplicates,
  * hashing the password, and storing the user in the database.
- * 
- * @param {Object} req - Express request object
- * @param {Object} res - Express response object
  */
 const signUp = async (req, res) => {
     const { email, password } = req.body;
@@ -74,10 +72,7 @@ const signUp = async (req, res) => {
         });
     }
 };
-
 export default signUp;
-
-
 
 
 
@@ -87,13 +82,9 @@ export default signUp;
  * This function authenticates a user by validating their credentials,
  * checking if they exist, verifying their password, and issuing a JWT token.
  * The token is stored in a cookie to manage session state.
- * 
- * @param {Object} req - Express request object
- * @param {Object} res - Express response object
  */
 export async function signIn(req, res) {
     const { email, password } = req.body;
-
     try {
         // Step 1: Validate input using Joi schema
         const { error } = signInSchema.validate({ email, password });
@@ -122,27 +113,44 @@ export async function signIn(req, res) {
             });
         }
 
-        // Step 4: Generate JWT access token
-        const token = jwt.sign(
+        // Step 4: Generate Access Token (short-lived) and Refresh Token (long-lived)
+        const accessToken = jwt.sign(
             {
                 userId: existingUser._id,
                 email: existingUser.email,
                 verified: existingUser.verified
             },
-            process.env.ACCESS_TOKEN, // Secret key
-            { expiresIn: "3h" } // Token expires in 3 hours
+            process.env.ACCESS_TOKEN, // Secret for access tokens
+            { expiresIn: "3h" }
         );
 
-        // Step 5: Set a cookie in the client’s browser with the token
-        res.cookie("Authorization", `Bearer ${token}`, {
-            expires: new Date(Date.now() + 24 * 60 * 60 * 1000), // 1 day expiration
-            httpOnly: process.env.NODE_ENV === "production", // Restrict access from client-side JS
-            secure: process.env.NODE_ENV === "production" // Use HTTPS in production
-        }).json({
-            success: true,
-            token, // Return token in response body as well
-            message: "Logged in successfully"
-        });
+        const refreshToken = jwt.sign(
+            { userId: existingUser._id },
+            process.env.REFRESH_TOKEN, // Secret for refresh tokens
+            { expiresIn: "1d" } // 1 day expiry
+        );
+
+        // Step 5: Set cookies
+        res
+            .cookie("Authorization", `Bearer ${accessToken}`, {
+                expires: new Date(Date.now() + 3 * 60 * 60 * 1000), // 3h
+                httpOnly: process.env.NODE_ENV === "production",
+                secure: process.env.NODE_ENV === "production",
+                sameSite: "strict"
+            })
+            .cookie("RefreshToken", refreshToken, {
+                expires: new Date(Date.now() + 24 * 60 * 60 * 1000), // 1 day
+                httpOnly: true,
+                secure: process.env.NODE_ENV === "production",
+                sameSite: "strict"
+            })
+            .json({
+                success: true,
+                refreshToken: refreshToken,
+                accessToken: accessToken,
+                message: "Logged in successfully"
+            });
+
 
     } catch (error) {
         // Log and handle unexpected server error
@@ -160,9 +168,6 @@ export async function signIn(req, res) {
  * 
  * This function clears the authentication cookie from the user's browser,
  * effectively logging them out by removing the stored JWT token.
- * 
- * @param {Object} req - Express request object
- * @param {Object} res - Express response object
  */
 export async function signOut(req, res) {
     // Clear the "Authorization" cookie to log the user out
@@ -177,7 +182,6 @@ export async function signOut(req, res) {
 
     // Note: Since JWTs are stateless, there's nothing to "delete" on the server unless using a token blacklist
 }
-
 
 
 export async function forgotPassword(req, res) {
