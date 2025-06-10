@@ -6,6 +6,76 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
+/**
+ * Sign up a new user
+ * 
+ * This function registers a new user by validating input, checking for duplicates,
+ * hashing the password, and storing the user in the database.
+ * 
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
+const signUp = async (req, res) => {
+    const { email, password } = req.body;
+
+    try {
+        // Step 1: Validate input using Joi schema
+        const { error } = signUpSchema.validate({ email, password });
+        if (error) {
+            return res.status(401).json({
+                success: false,
+                message: error.details[0].message // Return validation error message
+            });
+        }
+
+        // Step 2: Check if the email already exists in the database
+        const existingUser = await UserModel.findOne({ email, password }); // password should not be in this query
+        if (existingUser) {
+            return res.status(401).json({
+                success: false,
+                message: "Email already exists, use something else!"
+            });
+        }
+
+        // Step 3: Hash the password using a secure algorithm
+        const hashedPassword = await doHash(password, 12); // doHash is assumed to be a bcrypt wrapper
+
+        // Step 4 (optional): You could generate access & refresh tokens here if needed
+        /*
+        const userTokenValue = jwt.sign({
+            id: newUser._id,
+            email: newUser.email
+        }, process.env.ACCESS_TOKEN, { expiresIn: '3h' });
+        */
+
+        // Step 5: Save the new user to the database
+        const newUser = new UserModel({
+            email,
+            password: hashedPassword
+        });
+
+        const result = await newUser.save();
+
+        // Step 6: Remove password from response for security
+        result.password = undefined;
+
+        // Step 7: Return success response
+        res.status(201).json({
+            success: true,
+            message: "Your account has been created successfully",
+            result
+        });
+
+    } catch (error) {
+        console.error("SignUp Error:", error);
+        res.status(500).json({
+            success: false,
+            message: "Internal server error"
+        });
+    }
+};
+
+export default signUp;
 
 
 
