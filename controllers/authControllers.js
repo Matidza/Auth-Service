@@ -3,6 +3,7 @@ import { signUpSchema, signInSchema } from "../middlewares/validators.js";
 import doHash, { decryptHashedPassword } from "../utilities/hashing.js";
 import jwt from 'jsonwebtoken';
 import dotenv from "dotenv";
+import sendEmail from "../middlewares/sendEmail.js";
 
 dotenv.config();
 
@@ -186,5 +187,53 @@ export async function signOut(req, res) {
 
 export async function forgotPassword(req, res) {
     const {email} = req.body;
+    try {
+        const existingUser = await UserModel.findOne({email})
+        // Check if user exists
+        if (!existingUser) {
+            return res.status(401).json({
+                success: false,
+                message: "User doesn't exist"
+            });
+        }
+        // check if user is verified
+        if (existingUser.verified) {
+            return res.status(401).json({
+                success: false,
+                message: "User is already verified"
+            });
+        }
+        // Generate reset password code
+        const restCode = Math.floor(Math.random() * 1000000).toString()
+
+        // Send email to user
+        let sendingEmail = await sendEmail.sendMail({
+            from: process.env.EMAIL_ADDRESS,
+            to: existingUser.email,
+            subject: 'Verification code',
+            html: '<h2>' + restCode + '</h2>'
+        })
+
+        if (sendingEmail.accepted[0] === existingUser.email ) {
+            const hashedValue = hmacProcess(restCode, process.env.HMAC_VERIFICATION_CODE_SECRET)
+            existingUser.verificationCode = hashedValue;
+            existingUser.verificationCodeValidation = Date.now();
+
+            await existingUser.save()
+            return res.status(200).json({
+                success: true,
+                message: "Code sent to your email"
+            })
+        }
+
+        res.status(400).json({
+            success: false,
+            message: "Code sent failed"
+        });
+        console.log(sendingEmail)
+
+    }catch (error) {
+        console.log(error)
+    }
 
 }
