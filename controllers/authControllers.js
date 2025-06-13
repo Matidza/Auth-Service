@@ -1,6 +1,7 @@
 import UserModel from "../models/userModel.js";
 import { signUpSchema, signInSchema } from "../middlewares/validators.js";
 import doHash, { decryptHashedPassword } from "../utilities/hashing.js";
+
 import jwt from 'jsonwebtoken';
 import dotenv from "dotenv";
 import sendEmail from "../middlewares/sendEmail.js";
@@ -9,8 +10,7 @@ dotenv.config();
 
 
 /**
- * Sign up a new user
- * 
+ * Sign up a new user 
  * This function registers a new user by validating input, checking for duplicates,
  * hashing the password, and storing the user in the database.
  */
@@ -79,7 +79,6 @@ export default signUp;
 
 /**
  * Sign in a user
- * 
  * This function authenticates a user by validating their credentials,
  * checking if they exist, verifying their password, and issuing a JWT token.
  * The token is stored in a cookie to manage session state.
@@ -204,18 +203,30 @@ export async function forgotPassword(req, res) {
             });
         }
         // Generate reset password code
-        const restCode = Math.floor(Math.random() * 1000000).toString()
+        const resetCode = Math.floor(100000 + Math.random() * 900000).toString(); // ensures 6 digits
 
         // Send email to user
         let sendingEmail = await sendEmail.sendMail({
             from: process.env.EMAIL_ADDRESS,
             to: existingUser.email,
-            subject: 'Verification code',
-            html: '<h2>' + restCode + '</h2>'
-        })
+            subject: 'Password Reset Request',
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
+                    <h2 style="color: #333;">Password Reset Code</h2>
+                    <p>Hello ${existingUser.email || ''},</p>
+                    <p>We received a request to reset your password. Use the code below to proceed with resetting your password:</p>
+                    <div style="text-align: center; margin: 20px 0;">
+                        <span style="font-size: 32px; font-weight: bold; color: #4CAF50;">${resetCode}</span>
+                    </div>
+                    <p><strong>Note:</strong> This code will expire in 5 minutes for security reasons. If you did not request a password reset, please ignore this email or contact support immediately.</p>
+                    <p>Thank you,<br/>The Support Team</p>
+                </div>
+            `
+        });
+
 
         if (sendingEmail.accepted[0] === existingUser.email ) {
-            const hashedValue = hmacProcess(restCode, process.env.HMAC_VERIFICATION_CODE_SECRET)
+            const hashedValue = hmacProcess(resetCode, process.env.HMAC_VERIFICATION_CODE_SECRET)
             existingUser.verificationCode = hashedValue;
             existingUser.verificationCodeValidation = Date.now();
 
