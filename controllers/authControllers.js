@@ -308,6 +308,11 @@ export async function resetPassword(req, res) {
             })
         }
 
+        res.status(400).json({
+            success: false,
+            message: "Code sent failed"
+        });
+        
     } catch(error) {
         console.log(error)
     }
