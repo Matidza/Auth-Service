@@ -6,9 +6,9 @@ import jwt from 'jsonwebtoken';
 import dotenv from "dotenv";
 import sendEmail from "../middlewares/sendEmail.js";
 
+
+
 dotenv.config();
-
-
 /**
  * Sign up a new user 
  * This function registers a new user by validating input, checking for duplicates,
@@ -16,7 +16,6 @@ dotenv.config();
  */
 const signUp = async (req, res) => {
     const { email, password } = req.body;
-
     try {
         // Step 1: Validate input using Joi schema
         const { error } = signUpSchema.validate({ email, password });
@@ -65,7 +64,8 @@ const signUp = async (req, res) => {
             result
         });
 
-    } catch (error) {
+    } 
+    catch (error) {
         console.error("SignUp Error:", error);
         res.status(500).json({
             success: false,
@@ -74,7 +74,6 @@ const signUp = async (req, res) => {
     }
 };
 export default signUp;
-
 
 
 /**
@@ -150,8 +149,6 @@ export async function signIn(req, res) {
                 accessToken: accessToken,
                 message: "Logged in successfully"
             });
-
-
     } catch (error) {
         // Log and handle unexpected server error
         console.error("SignIn Error:", error);
@@ -164,8 +161,7 @@ export async function signIn(req, res) {
 
 
 /**
- * Sign out a user
- * 
+ * Sign out a user 
  * This function clears the authentication cookie from the user's browser,
  * effectively logging them out by removing the stored JWT token.
  */
@@ -179,7 +175,6 @@ export async function signOut(req, res) {
         success: true,
         message: "Logged out successfully"
     });
-
     // Note: Since JWTs are stateless, there's nothing to "delete" on the server unless using a token blacklist
 }
 
@@ -246,5 +241,10 @@ export async function forgotPassword(req, res) {
     }catch (error) {
         console.log(error)
     }
+}
 
+
+export async function resetPassword(req, res) {
+    console.log(req.body)
+    res.send(req.body)
 }
