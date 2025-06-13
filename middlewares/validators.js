@@ -1,5 +1,5 @@
 import Joi from "joi";
-/**
+
 const signUpSchema = Joi.object({
     email: Joi.string().min(5).max(60).required().email({
         tlds: {allow: false},
@@ -25,8 +25,16 @@ const signInSchema = Joi.object({
         'any.required': `Password is required.`
     })
 });
- */
 
+const acceptedCodeSchema = Joi.object({
+    email: Joi.string().min(5).max(60).required().email({
+        tlds: {allow: false},
+    }),
+    providedCodeValue: Joi.number().required()
+    
+});
+
+/**
  const emailSchema = Joi.string().min(5).max(60).required().email({
   tlds: { allow: ['com', 'net'] }
 });
@@ -39,10 +47,11 @@ const passwordSchema = Joi.string().required().pattern(
   'any.required': `Password is required.`
 });
 
-const providedCodeValue = Joi.number().required()
+const providedCodeSchema = Joi.number().required()
 
 const signUpSchema = Joi.object({ email: emailSchema, password: passwordSchema });
 const signInSchema = Joi.object({ email: emailSchema, password: passwordSchema });
-const acceptedCodeValue = Joi.object({ email: emailSchema, providedCodeValue})
+const acceptedCodeSchema = Joi.object({ email: emailSchema, providedCodeValue: providedCodeSchema})
 
-export { signUpSchema, signInSchema, acceptedCodeValue };
+export { signUpSchema, signInSchema, acceptedCodeSchema };
+ */

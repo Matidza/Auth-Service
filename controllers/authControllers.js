@@ -1,6 +1,6 @@
 import UserModel from "../models/userModel.js";
-import { signUpSchema, signInSchema } from "../middlewares/validators.js";
-import doHash, { decryptHashedPassword } from "../utilities/hashing.js";
+import { signUpSchema, signInSchema, acceptedCodeSchema } from "../middlewares/validators.js";
+import doHash, { decryptHashedPassword, hmacProcess } from "../utilities/hashing.js";
 
 import jwt from 'jsonwebtoken';
 import dotenv from "dotenv";
@@ -244,7 +244,71 @@ export async function forgotPassword(req, res) {
 }
 
 
+const acceptedCodeSchema = Joi.object({
+    email: Joi.string().min(5).max(60).required().email({
+        tlds: {allow: false},
+    }),
+    providedCodeValue: Joi.number().required()
+    
+});
+
 export async function resetPassword(req, res) {
-    console.log(req.body)
-    res.send(req.body)
+    const { email, providedCodeValue } = req.body;
+    try {
+        const {error, value} = acceptedCodeSchema.validate({ email, providedCodeValue })
+        if (error) {
+            return res.status(401).json({
+                success: false,
+                message: error.details[0].message // Return the first validation error
+            });
+        }
+
+        // convert providedCodeValue to string
+        const providedCodeValue = providedCodeValue.toString()
+        const existingUser = await UserModel.findOne({ email}).select('+ verificationCode + verificationCodeValidation')
+
+        if (!existingUser) {
+            return res.status(401).json({
+                success: false,
+                message: "User doesn't exist"
+            });
+        }
+
+        if (existingUser.verified) {
+            return res.status(401).json({
+                success: false,
+                message: "User is already verified"
+            });
+        }
+
+        if ( existingUser.verificationCode || existingUser.verificationCodeValidation ) {
+            return res.status(401).json({
+                success: false,
+                message: "User is already verified"
+            });
+        }
+
+        // check if providedCodev=Value has been sent more than 5min ago
+        if (Date.now() - existingUser.verificationCode > 5 * 60 * 1000) {
+            return res.status(401).json({
+                success: false,
+                message: "code has expired!"
+            });
+        }
+
+        const hashedCodeValue = hmacProcess(providedCodeValue, process.env.HMAC_VERIFICATION_CODE_SECRET)
+        if ( hashedCodeValue === existingUser.verificationCode) {       
+            existingUser.verified = true,
+            existingUser.verificationCode = undefined,
+            existingUser.verificationCodeValidation = undefined,
+            await existingUser.save()
+            return res.status(200).json({
+                success: true,
+                message: "Code sent to your email"
+            })
+        }
+
+    } catch(error) {
+        console.log(error)
+    }
 }
