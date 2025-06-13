@@ -39,7 +39,10 @@ const passwordSchema = Joi.string().required().pattern(
   'any.required': `Password is required.`
 });
 
+const providedCodeValue = Joi.number().required()
+
 const signUpSchema = Joi.object({ email: emailSchema, password: passwordSchema });
 const signInSchema = Joi.object({ email: emailSchema, password: passwordSchema });
+const acceptedCodeValue = Joi.object({ email: emailSchema, providedCodeValue})
 
-export { signUpSchema, signInSchema };
+export { signUpSchema, signInSchema, acceptedCodeValue };
