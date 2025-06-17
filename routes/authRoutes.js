@@ -12,13 +12,12 @@ const router = express.Router();
 //Routes will be Implemented here
 router.post('/signup', catchAsync(signUp))
 router.post('/signin', catchAsync(signIn))
-router.post('/signout',  catchAsync(signOut))
-router.patch('/send-verification-code', catchAsync(sendVarificationCode))
-router.patch('/verify-verification-code', catchAsync(verifyVarificationCode))
+router.post('/signout', identifier, catchAsync(signOut))
+router.patch('/send-verification-code', identifier, catchAsync(sendVarificationCode))
+router.patch('/verify-verification-code', identifier, catchAsync(verifyVarificationCode))
 
-router.patch('/change-password',  catchAsync(changePassword))
+router.patch('/change-password', identifier, catchAsync(changePassword))
 router.patch('/forgot-password',  catchAsync())
 router.patch('/reset-password',  catchAsync())
-
 
 export default router

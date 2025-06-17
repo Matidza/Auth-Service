@@ -122,12 +122,12 @@ export async function signIn(req, res) {
             process.env.SECRET_ACCESS_TOKEN, // Secret for access tokens
             { expiresIn: "3h" }
         );
-
+        /** 
         const refreshToken = jwt.sign(
             { userId: existingUser._id },
             process.env.SECRET_REFRESH_TOKEN, // Secret for refresh tokens
             { expiresIn: "1d" } // 1 day expiry
-        );
+        );*/
 
         // Step 5: Set cookies
         res
@@ -136,17 +136,17 @@ export async function signIn(req, res) {
                 httpOnly: process.env.NODE_ENV === "production",
                 secure: process.env.NODE_ENV === "production",
                 sameSite: "strict"
-            })
+            })/*** 
             .cookie("RefreshToken", refreshToken, {
                 expires: new Date(Date.now() + 24 * 60 * 60 * 1000), // 1 day
                 httpOnly: true,
                 secure: process.env.NODE_ENV === "production",
                 sameSite: "strict"
-            })
+            })*/
             .json({
                 success: true,
                 user: existingUser._id,
-                refreshToken: refreshToken,
+                //refreshToken: refreshToken,
                 accessToken: accessToken,
                 message: "Logged in successfully"
             });
@@ -243,7 +243,6 @@ export async function sendVarificationCode(req, res) {
         console.log(error)
     }
 }
-
 
 
 
@@ -350,7 +349,8 @@ export async function changePassword(req, res) {
         const hashedPassword = await doHash(newpassword, 12)
         existingUser.password = hashedPassword;
         await existingUser.save();
-        return res.status(200).json({
+        return res.status(200).
+            json({
                 success: true,
                 message: "Password updated!"
             });

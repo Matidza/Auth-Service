@@ -1,16 +1,16 @@
-import { compare } from "bcryptjs";
-import { hash } from "bcryptjs"
-import createHmac from 'crypto'
+import { compare, hash } from "bcryptjs";
+import { createHmac } from "crypto";
+
 const doHash = (value, saltValue) => {
-    const result = hash(value, saltValue)
-    return result
-}
+    return hash(value, saltValue);
+};
+
 export default doHash;
+
 export function decryptHashedPassword(value, hashedValue) {
-    const result = compare(value, hashedValue)
-    return result
+    return compare(value, hashedValue);
 }
+
 export function hmacProcess(value, key) {
-    const result = createHmac('sha256', key).update(value).digest('hex')
-    return result
+    return createHmac('sha256', key).update(value).digest('hex');
 }
