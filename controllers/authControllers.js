@@ -284,7 +284,6 @@ export async function verifyVarificationCode(req, res) {
         }
 
         const hashedCodeValue = hmacProcess(providedCodeValue, process.env.HMAC_VERIFICATION_CODE_SECRET);
-
         if (hashedCodeValue === existingUser.verificationCode) {
             existingUser.verified = true;
             existingUser.verificationCode = undefined;

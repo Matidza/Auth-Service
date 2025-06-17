@@ -17,7 +17,8 @@ export function identifier(req, res ) {
     }
 
     if (!token) {
-        return res.status(403).json({
+        return res.status(403)
+            .json({
                 success: false,
                 message: "Unauthorized"
             });
