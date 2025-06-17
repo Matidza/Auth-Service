@@ -1,6 +1,7 @@
 import express from "express";
 import signUp, { 
-    changePassword, sendVarificationCode, 
+    changePassword, forgotPassword, 
+    resetPassword, sendVarificationCode, 
     signIn, signOut, verifyVarificationCode 
 } from "../controllers/authControllers.js";
 
@@ -17,7 +18,7 @@ router.patch('/send-verification-code', identifier, catchAsync(sendVarificationC
 router.patch('/verify-verification-code', identifier, catchAsync(verifyVarificationCode))
 
 router.patch('/change-password', identifier, catchAsync(changePassword))
-router.patch('/forgot-password',  catchAsync())
-router.patch('/reset-password',  catchAsync())
+router.patch('/forgot-password', identifier, catchAsync(forgotPassword))
+router.patch('/reset-password', identifier, catchAsync(resetPassword))
 
 export default router

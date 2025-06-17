@@ -359,5 +359,12 @@ export async function changePassword(req, res) {
         console.log(error);
         
     }
+}
 
+export async function forgotPassword(req, res) {
+    return res.send("Hello")
+}
+
+export async function resetPassword(req, res) {
+    return res.send("Hello")
 }
