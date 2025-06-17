@@ -1,5 +1,5 @@
 import UserModel from "../models/userModel.js";
-import { signUpSchema, signInSchema, acceptedCodeSchema } from "../middlewares/validators.js";
+import { signUpSchema, signInSchema, acceptedCodeSchema, changePasswordSchema } from "../middlewares/validators.js";
 import doHash, { decryptHashedPassword, hmacProcess } from "../utilities/hashing.js";
 
 import jwt from 'jsonwebtoken';
@@ -119,13 +119,13 @@ export async function signIn(req, res) {
                 email: existingUser.email,
                 verified: existingUser.verified
             },
-            process.env.ACCESS_TOKEN, // Secret for access tokens
+            process.env.SECRET_ACCESS_TOKEN, // Secret for access tokens
             { expiresIn: "3h" }
         );
 
         const refreshToken = jwt.sign(
             { userId: existingUser._id },
-            process.env.REFRESH_TOKEN, // Secret for refresh tokens
+            process.env.SECRET_REFRESH_TOKEN, // Secret for refresh tokens
             { expiresIn: "1d" } // 1 day expiry
         );
 
@@ -145,6 +145,7 @@ export async function signIn(req, res) {
             })
             .json({
                 success: true,
+                user: existingUser._id,
                 refreshToken: refreshToken,
                 accessToken: accessToken,
                 message: "Logged in successfully"
@@ -179,7 +180,7 @@ export async function signOut(req, res) {
 }
 
 
-export async function forgotPassword(req, res) {
+export async function sendVarificationCode(req, res) {
     const {email} = req.body;
     try {
         const existingUser = await UserModel.findOne({email})
@@ -199,10 +200,10 @@ export async function forgotPassword(req, res) {
         }
         // Generate reset password code
         const resetCode = Math.floor(100000 + Math.random() * 900000).toString(); // ensures 6 digits
-
+        console.log(resetCode)
         // Send email to user
         let sendingEmail = await sendEmail.sendMail({
-            from: process.env.EMAIL_ADDRESS,
+            from: process.env.NODE_CODE_SENDING_EMAIL_ADDRESS,
             to: existingUser.email,
             subject: 'Password Reset Request',
             html: `
@@ -218,8 +219,8 @@ export async function forgotPassword(req, res) {
                 </div>
             `
         });
-
-
+       
+        
         if (sendingEmail.accepted[0] === existingUser.email ) {
             const hashedValue = hmacProcess(resetCode, process.env.HMAC_VERIFICATION_CODE_SECRET)
             existingUser.verificationCode = hashedValue;
@@ -244,17 +245,12 @@ export async function forgotPassword(req, res) {
 }
 
 
-const acceptedCodeSchema = Joi.object({
-    email: Joi.string().min(5).max(60).required().email({
-        tlds: { allow: false },
-    }),
-    providedCodeValue: Joi.number().required()
-});
 
-export async function resetPassword(req, res) {
+
+export async function verifyVarificationCode(req, res) {
     let { email, providedCodeValue } = req.body;
     try {
-        const { error } = acceptedCodeSchema.validate({ email, providedCodeValue });
+        const { error, value } = acceptedCodeSchema.validate({ email, providedCodeValue });
         if (error) {
             return res.status(401).json({
                 success: false,
@@ -313,4 +309,56 @@ export async function resetPassword(req, res) {
             message: "Internal server error"
         });
     }
+}
+
+
+export async function changePassword(req, res) {
+    const { userId, verified } = req.user;
+    const { oldPassword, newpassword} = req.body;
+
+    try {
+        const {error, value} = changePasswordSchema.validate({oldPassword, newpassword})
+        if (error) {
+            return res.status(401).json({
+                success: false,
+                message: error.details[0].message
+            });
+        }
+        /**  */
+        if (!verified) {
+            return res.status(401).json({
+                success: false,
+                message: "You are not verified"
+            });
+        }
+        
+        const existingUser = await UserModel.findOne({_id:userId}).select("+ password")
+        if (!existingUser) {
+            return res.status(401).json({
+                success: false,
+                message: "User doesn't exist"
+            });
+        }
+
+        const result = await doHashValidation(oldPassword, existingUser.password)
+        if (!result) {
+            return res.status(401).json({
+                success: false,
+                message: "Invalid credentials!"
+            });
+        }
+
+        const hashedPassword = await doHash(newpassword, 12)
+        existingUser.password = hashedPassword;
+        await existingUser.save();
+        return res.status(200).json({
+                success: true,
+                message: "Password updated!"
+            });
+
+    } catch(error) {
+        console.log(error);
+        
+    }
+
 }
