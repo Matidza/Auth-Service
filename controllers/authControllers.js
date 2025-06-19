@@ -318,10 +318,10 @@ export async function verifyVarificationCode(req, res) {
 
 export async function changePassword(req, res) {
     const { userId, verified } = req.user;
-    const { oldPassword, newpassword} = req.body;
+    const { oldPassword, newPassword} = req.body;
 
     try {
-        const {error, value} = changePasswordSchema.validate({oldPassword, newpassword})
+        const {error, value} = changePasswordSchema.validate({oldPassword, newPassword})
         if (error) {
             return res.status(401).json({
                 success: false,
@@ -352,7 +352,7 @@ export async function changePassword(req, res) {
             });
         }
 
-        const hashedPassword = await doHash(newpassword, 12)
+        const hashedPassword = await doHash(newPassword, 12)
         existingUser.password = hashedPassword;
         await existingUser.save();
         return res.status(200).
