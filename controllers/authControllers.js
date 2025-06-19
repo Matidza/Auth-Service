@@ -328,15 +328,15 @@ export async function changePassword(req, res) {
                 message: error.details[0].message
             });
         }
-        /**  */
+        /**  
         if (!verified) {
             return res.status(401).json({
                 success: false,
                 message: "You are not verified"
             });
-        }
+        }*/
         
-        const existingUser = await UserModel.findOne({_id:userId}).select("+ password")
+        const existingUser = await UserModel.findOne({_id:userId}).select("+password")
         if (!existingUser) {
             return res.status(401).json({
                 success: false,
@@ -344,7 +344,7 @@ export async function changePassword(req, res) {
             });
         }
 
-        const result = await doHashValidation(oldPassword, existingUser.password)
+        const result = await decryptHashedPassword(oldPassword, existingUser.password)
         if (!result) {
             return res.status(401).json({
                 success: false,

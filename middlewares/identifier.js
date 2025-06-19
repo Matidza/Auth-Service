@@ -1,11 +1,12 @@
+/**
 import dotenv from "dotenv";
 import jwt from 'jsonwebtoken';
 dotenv.config();
 
-/**
+
  * for making sure that usrs cant access signout, send-Verification-Code
  * and onter rout that need users to be logged in
- */
+
 
 export function identifier(req, res, next) {
     let token;
@@ -35,6 +36,40 @@ export function identifier(req, res, next) {
         next(); // <-- don't forget this
     } catch (error) {
         console.error("JWT Error:", error.message);
+        return res.status(401).json({
+            success: false,
+            message: "Invalid or expired token"
+        });
+    }
+}
+ */
+
+import jwt from 'jsonwebtoken';
+import dotenv from "dotenv";
+dotenv.config();
+
+
+export function identifier(req, res, next) {
+    const authHeader = req.headers.authorization;
+
+    // Debugging logs (optional, remove in production)
+    console.log("Authorization Header:", authHeader);
+
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(403).json({
+            success: false,
+            message: "Unauthorized: No token provided"
+        });
+    }
+
+    const token = authHeader.split(' ')[1].trim();
+
+    try {
+        const jwtVerified = jwt.verify(token, process.env.SECRET_ACCESS_TOKEN);
+        req.user = jwtVerified;
+        next();
+    } catch (err) {
+        console.error("JWT Error:", err.message);
         return res.status(401).json({
             success: false,
             message: "Invalid or expired token"

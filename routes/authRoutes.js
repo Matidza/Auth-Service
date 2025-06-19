@@ -27,7 +27,7 @@ router.patch('/send-verification-code', identifier, catchAsync(sendVarificationC
 router.patch('/verify-verification-code', identifier, catchAsync(verifyVarificationCode))
 
 router.patch('/change-password', identifier, catchAsync(changePassword))
-router.patch('/forgot-password', catchAsync(sendForgotPasswordCode))
-router.patch('/reset-password', catchAsync(verifysendForgotPasswordCode))
+router.patch('/forgot-password', identifier, catchAsync(sendForgotPasswordCode))
+router.patch('/reset-password', identifier, catchAsync(verifysendForgotPasswordCode))
 
 export default router
