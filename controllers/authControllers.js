@@ -1,5 +1,5 @@
 import UserModel from "../models/userModel.js";
-import { signUpSchema, signInSchema, acceptedCodeSchema, changePasswordSchema } from "../middlewares/validators.js";
+import { signUpSchema, signInSchema, acceptedCodeSchema, changePasswordSchema, acceptForgotPasswordSchema } from "../middlewares/validators.js";
 import doHash, { decryptHashedPassword, hmacProcess } from "../utilities/hashing.js";
 
 import jwt from 'jsonwebtoken';
@@ -205,7 +205,7 @@ export async function sendVarificationCode(req, res) {
         let sendingEmail = await sendEmail.sendMail({
             from: process.env.NODE_CODE_SENDING_EMAIL_ADDRESS,
             to: existingUser.email,
-            subject: 'Password Reset Request',
+            subject: 'Verify Code Request',
             html: `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
                     <h2 style="color: #333;">Password Reset Code</h2>
@@ -271,6 +271,12 @@ export async function verifyVarificationCode(req, res) {
             return res.status(401).json({
                 success: false,
                 message: "User is already verified"
+            });
+        }
+        if (!existingUser.verificationCode  || !existingUser.verificationCodeValidation) {
+            return res.status(400).json({
+                success: false,
+                message: "Something went wrong"
             });
         }
 
@@ -361,10 +367,134 @@ export async function changePassword(req, res) {
     }
 }
 
-export async function forgotPassword(req, res) {
-    return res.send("Hello")
+
+
+
+
+
+
+export async function sendForgotPasswordCode(req, res) {
+    const {email} = req.body;
+    try {
+        const existingUser = await UserModel.findOne({email})
+        // Check if user exists
+        if (!existingUser) {
+            return res.status(401).json({
+                success: false,
+                message: "User doesn't exist"
+            });
+        }
+
+        // Generate reset password code
+        const resetCode = Math.floor(100000 + Math.random() * 900000).toString(); // ensures 6 digits
+       console.log(resetCode)
+        // Send email to user
+        let sendingEmail = await sendEmail.sendMail({
+            from: process.env.NODE_CODE_SENDING_EMAIL_ADDRESS,
+            to: existingUser.email,
+            subject: 'Forgot Password Code Request:',
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
+                    <h2 style="color: #333;">Password Reset Code</h2>
+                    <p>Hello ${existingUser.email || ''},</p>
+                    <p>We received a request to reset your password. Use the code below to proceed with resetting your password:</p>
+                    <div style="text-align: center; margin: 20px 0;">
+                        <span style="font-size: 32px; font-weight: bold; color: #4CAF50;">${resetCode}</span>
+                    </div>
+                    <p><strong>Note:</strong> This code will expire in 5 minutes for security reasons. If you did not request a password reset, please ignore this email or contact support immediately.</p>
+                    <p>Thank you,<br/>The Support Team</p>
+                </div>
+            `
+        });
+       
+        
+        if (sendingEmail.accepted[0] === existingUser.email ) {
+            const hashedValue = hmacProcess(resetCode, process.env.HMAC_VERIFICATION_CODE_SECRET)
+            existingUser.forgotPasswordCode = hashedValue;
+            existingUser.forgotPasswordCodeValidation = Date.now();
+
+            await existingUser.save()
+            return res.status(200).json({
+                success: true,
+                message: "Code sent to your email"
+            })
+        }
+
+        res.status(400).json({
+            success: false,
+            message: "Code sent failed"
+        });
+        console.log(sendingEmail)
+
+    }catch (error) {
+        console.log(error)
+    }
 }
 
-export async function resetPassword(req, res) {
-    return res.send("Hello")
+
+
+export async function verifysendForgotPasswordCode(req, res) {
+    let { email, providedCodeValue, newPassword } = req.body;
+    try {
+        const { error, value } = acceptForgotPasswordSchema.validate({ email, providedCodeValue, newPassword });
+        if (error) {
+            return res.status(401).json({
+                success: false,
+                message: error.details[0].message
+            });
+        }
+
+        providedCodeValue = providedCodeValue.toString();
+        const existingUser = await UserModel.findOne({ email }).select('+forgotPasswordCode +forgotPasswordCodeValidation');
+
+        if (!existingUser) {
+            return res.status(401).json({
+                success: false,
+                message: "User doesn't exist"
+            });
+        }
+
+       
+        if (!existingUser.forgotPasswordCode  || !existingUser.forgotPasswordCodeValidation) {
+            return res.status(400).json({
+                success: false,
+                message: "Something went wrong"
+            });
+        }
+
+        // Check if code has expired
+        if (Date.now() - existingUser.forgotPasswordCodeValidation > 5 * 60 * 1000) {
+            return res.status(401).json({
+                success: false,
+                message: "Code has expired!"
+            });
+        }
+
+        const hashedCodeValue = hmacProcess(providedCodeValue, process.env.HMAC_VERIFICATION_CODE_SECRET);
+        
+        if (hashedCodeValue === existingUser.forgotPasswordCode) {
+            const hashedPassword = await doHash(newPassword, 12);
+            existingUser.password = hashedPassword
+            existingUser.forgotPasswordCode = undefined;
+            existingUser.forgotPasswordCodeValidation = undefined;
+            await existingUser.save();
+
+            return res.status(200).json({
+                success: true,
+                message: "Password updated successfully!"
+            });
+        }
+
+        return res.status(400).json({
+            success: false,
+            message: "Invalid code"
+        });
+
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({
+            success: false,
+            message: "Internal server error"
+        });
+    }
 }

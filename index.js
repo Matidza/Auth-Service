@@ -3,7 +3,7 @@ import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import mongoose from 'mongoose';
-import authroutesRoutes from './routes/authRoutes.js'
+import authroutesRoutes, { data } from './routes/authRoutes.js'
 
 import dotenv from 'dotenv';
 dotenv.config();
@@ -19,13 +19,15 @@ app.use(express.json())
 app.use(express.urlencoded({extended:true}))
 
 mongoose.connect(process.env.MONGO_URI).then(() => {
-    console.log("database connected...")
+    console.log("connecting to database...")
+    console.log("database connected!")
 }).catch( err => {
     console.log(err);
 })
 
 //Routes
 app.use('/api/auth', authroutesRoutes)
+
 // Global error handler middleware
 app.use((err, req, res, next) => {
     console.error("\n🔥 Error occurred:", err);
@@ -37,7 +39,10 @@ app.use((err, req, res, next) => {
     });
 });
 
+//Routes will be Implemented here
+app.get('/', data)
 
 app.listen(PORT, () => { //process.env.PORT
     console.log(`\nServer running on port: http://localhost:${PORT}\n`)
+    console.log("connecting to database...")
 })

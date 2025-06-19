@@ -1,16 +1,25 @@
 import express from "express";
 import signUp, { 
-    changePassword, forgotPassword, 
-    resetPassword, sendVarificationCode, 
-    signIn, signOut, verifyVarificationCode 
+    changePassword, sendForgotPasswordCode, sendVarificationCode, 
+    signIn, signOut, verifysendForgotPasswordCode, verifyVarificationCode 
 } from "../controllers/authControllers.js";
 
 import catchAsync from '../utilities/catchAsync.js';
 import { identifier } from "../middlewares/identifier.js";
+import UserModel from "../models/userModel.js";
 
 const router = express.Router();
 
+export async function data(req, res)  {
+    const users = await UserModel.find()
+    let allData = users.map((user) => {
+        return user
+    })
+
+    res.send(allData)
+}
 //Routes will be Implemented here
+
 router.post('/signup', catchAsync(signUp))
 router.post('/signin', catchAsync(signIn))
 router.post('/signout', identifier, catchAsync(signOut))
@@ -18,7 +27,7 @@ router.patch('/send-verification-code', identifier, catchAsync(sendVarificationC
 router.patch('/verify-verification-code', identifier, catchAsync(verifyVarificationCode))
 
 router.patch('/change-password', identifier, catchAsync(changePassword))
-router.patch('/forgot-password', identifier, catchAsync(forgotPassword))
-router.patch('/reset-password', identifier, catchAsync(resetPassword))
+router.patch('/forgot-password', catchAsync(sendForgotPasswordCode))
+router.patch('/reset-password', catchAsync(verifysendForgotPasswordCode))
 
 export default router
