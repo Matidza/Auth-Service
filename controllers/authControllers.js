@@ -7,7 +7,6 @@ import dotenv from "dotenv";
 import sendEmail from "../middlewares/sendEmail.js";
 
 
-
 dotenv.config();
 /**
  * Sign up a new user 
@@ -63,6 +62,7 @@ const signUp = async (req, res) => {
             message: "Your account has been created successfully",
             result
         });
+        console.log(result)
 
     } 
     catch (error) {

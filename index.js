@@ -13,10 +13,11 @@ const app = express();
 const PORT = 8000
 
 app.use(cors({
-  origin: 'http://localhost:3000',
-  credentials: true
- }))
-app.use(helmet())
+    origin: 'http://localhost:3000', // allow only this origin
+    methods: ['POST', 'GET', 'PUT', 'DELETE'],
+    credentials: true // if you're using cookies/auth
+}));
+pp.use(helmet())
 app.use(cookieParser())
 app.use(express.json())
 
