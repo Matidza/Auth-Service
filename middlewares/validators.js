@@ -36,9 +36,19 @@ const acceptedCodeSchema = Joi.object({
 });
  */
 
-const emailSchema = Joi.string().min(5).max(60).required().email({
-  tlds: { allow: ['com', 'net'] }
+const emailSchema = Joi.string()
+.min(5)
+.max(60)
+.required()
+.email({ tlds: { allow: ['com', 'net'] } })
+.messages({
+  'string.email': 'Email must be a valid email address with .com or .net domain.',
+  'string.empty': 'Email cannot be empty.',
+  'any.required': 'Email is required.',
+  'string.min': 'Email must be at least 5 characters long.',
+  'string.max': 'Email must not exceed 60 characters.'
 });
+
 
 const passwordSchema = Joi.string().required().pattern(
   new RegExp('^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*()_+\\-=[\\]{};:\'",.<>/?]).{8,}$')

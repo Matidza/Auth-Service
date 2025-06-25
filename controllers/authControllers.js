@@ -19,7 +19,8 @@ const signUp = async (req, res) => {
         // Step 1: Validate input using Joi schema
         const { error } = signUpSchema.validate({ email, password });
         if (error) {
-            return res.status(401).json({
+            return res.status(400).json({
+                field: error.details[0].context.key,
                 success: false,
                 message: error.details[0].message // Return validation error message
             });
@@ -28,11 +29,13 @@ const signUp = async (req, res) => {
         // Step 2: Check if the email already exists in the database
         const existingUser = await UserModel.findOne({ email, password }); // password should not be in this query
         if (existingUser) {
-            return res.status(401).json({
+            return res.status(409).json({
                 success: false,
+                field: 'email',
                 message: "Email already exists, use something else!"
             });
         }
+
 
         // Step 3: Hash the password using a secure algorithm
         const hashedPassword = await doHash(password, 12); // doHash is assumed to be a bcrypt wrapper
@@ -69,7 +72,7 @@ const signUp = async (req, res) => {
         console.error("SignUp Error:", error);
         res.status(500).json({
             success: false,
-            message: "Internal server error"
+            message: "Internal server error or User already exists"
         });
     }
 };
