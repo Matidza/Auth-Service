@@ -47,7 +47,7 @@ const signUp = async (req, res) => {
 
         // Step 5: Save the new user to the database
         const newUser = new UserModel({
-            email,
+            email: email,
             password: hashedPassword
         });
 
@@ -150,6 +150,7 @@ export async function signIn(req, res) {
                 accessToken: accessToken,
                 message: "Logged in successfully"
             });
+            console.log(`\n User: ${existingUser._id}\n accessToken: ${accessToken}`)
     } catch (error) {
         // Log and handle unexpected server error
         console.error("SignIn Error:", error);
@@ -205,7 +206,7 @@ export async function sendVarificationCode(req, res) {
         let sendingEmail = await sendEmail.sendMail({
             from: process.env.NODE_CODE_SENDING_EMAIL_ADDRESS,
             to: existingUser.email,
-            subject: 'Verify Code Request',
+            subject: 'Verification  Code Request',
             html: `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
                     <h2 style="color: #333;">Password Reset Code</h2>
