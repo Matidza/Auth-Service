@@ -1,5 +1,7 @@
 import UserModel from "../models/userModel.js";
-import { signUpSchema, signInSchema, acceptedCodeSchema, changePasswordSchema, acceptForgotPasswordSchema } from "../middlewares/validators.js";
+import { signUpSchema, signInSchema, 
+    acceptedCodeSchema, changePasswordSchema, 
+    acceptForgotPasswordSchema, sendCodeSchema } from "../middlewares/validators.js";
 import doHash, { decryptHashedPassword, hmacProcess } from "../utilities/hashing.js";
 
 import jwt from 'jsonwebtoken';
@@ -191,6 +193,14 @@ export async function signOut(req, res) {
 export async function sendVarificationCode(req, res) {
     const {email} = req.body;
     try {
+        const { error } = sendCodeSchema.validate({ email });
+        if (error) {
+            return res.status(400).json({
+                field: error.details[0].context.key,
+                success: false,
+                message: error.details[0].message // Return the first validation error
+            });
+        }
         const existingUser = await UserModel.findOne({email})
         // Check if user exists
         if (!existingUser) {

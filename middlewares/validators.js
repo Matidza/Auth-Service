@@ -80,7 +80,7 @@ const signUpSchema = Joi.object({ email: emailSchema, password: passwordSchema }
 const signInSchema = Joi.object({ email: emailSchema, password: passwordSchema });
 const acceptedCodeSchema = Joi.object({ email: emailSchema, providedCodeValue: providedCodeSchema})
 const changePasswordSchema = Joi.object({ newPassword: newPasswordSchema, oldPassword: oldPasswordSchema })
-
+const sendCodeSchema = Joi.object({ email: emailSchema});
 const acceptForgotPasswordSchema = Joi.object({ 
   email: Joi.string().min(5).max(60).required().email({tlds: {allow: false},}),
   providedCodeValue: Joi.number().required(),
@@ -92,4 +92,4 @@ const acceptForgotPasswordSchema = Joi.object({
     })
 })
 
-export { signUpSchema, signInSchema, acceptedCodeSchema, changePasswordSchema, acceptForgotPasswordSchema };
+export { signUpSchema, signInSchema, acceptedCodeSchema, changePasswordSchema, acceptForgotPasswordSchema, sendCodeSchema };
