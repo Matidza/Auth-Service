@@ -32,7 +32,7 @@ const signUp = async (req, res) => {
             return res.status(409).json({
                 success: false,
                 field: 'email',
-                message: "Email already exists, use something else!"
+                message: "Email already exists, try a different one!"
             });
         }
 
@@ -69,10 +69,11 @@ const signUp = async (req, res) => {
 
     } 
     catch (error) {
-        console.error("SignUp Error:", error);
+        console.error("SignUp Error:", error["unique"]);
         res.status(500).json({
             success: false,
-            message: "Internal server error or User already exists"
+            field: 'email',
+            message: `email already exists, try a different one!`
         });
     }
 };
@@ -91,7 +92,8 @@ export async function signIn(req, res) {
         // Step 1: Validate input using Joi schema
         const { error } = signInSchema.validate({ email, password });
         if (error) {
-            return res.status(401).json({
+            return res.status(400).json({
+                field: error.details[0].context.key,
                 success: false,
                 message: error.details[0].message // Return the first validation error
             });
@@ -102,6 +104,7 @@ export async function signIn(req, res) {
         if (!existingUser) {
             return res.status(401).json({
                 success: false,
+                field: 'email',
                 message: "User doesn't exist"
             });
         }
@@ -111,6 +114,7 @@ export async function signIn(req, res) {
         if (!isPasswordValid) {
             return res.status(401).json({
                 success: false,
+                field: 'password',
                 message: "Invalid credentials!" // Password mismatch
             });
         }
@@ -123,7 +127,7 @@ export async function signIn(req, res) {
                 verified: existingUser.verified
             },
             process.env.SECRET_ACCESS_TOKEN, // Secret for access tokens
-            { expiresIn: "3h" }
+            { expiresIn: "0.5h" }
         );
         /** 
         const refreshToken = jwt.sign(
@@ -209,17 +213,29 @@ export async function sendVarificationCode(req, res) {
         let sendingEmail = await sendEmail.sendMail({
             from: process.env.NODE_CODE_SENDING_EMAIL_ADDRESS,
             to: existingUser.email,
-            subject: 'Verification  Code Request',
+            subject: 'Verification Code Request',
             html: `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
-                    <h2 style="color: #333;">Password Reset Code</h2>
+                    <h2 style="text-align: center; color: #24292e;">Reset your password</h2>
+                    
                     <p>Hello ${existingUser.email || ''},</p>
-                    <p>We received a request to reset your password. Use the code below to proceed with resetting your password:</p>
-                    <div style="text-align: center; margin: 20px 0;">
-                        <span style="font-size: 32px; font-weight: bold; color: #4CAF50;">${resetCode}</span>
+                    
+                    <p>We received a request to verify your account. Use the verification code below to continue the process:</p>
+                    
+                    <div style="text-align: center; margin: 30px 0;">
+                    <span style="font-size: 36px; font-weight: bold; color: #4CAF50;">${resetCode}</span>
                     </div>
-                    <p><strong>Note:</strong> This code will expire in 5 minutes for security reasons. If you did not request a password reset, please ignore this email or contact support immediately.</p>
-                    <p>Thank you,<br/>The Support Team</p>
+                    
+                    <p style="text-align: center;">
+                    <a  href="http://localhost:3000/verify-reset-code?email=${existingUser.email}" 
+                        style="display: inline-block; padding: 12px 24px; background-color: #2ea44f; color: white; text-decoration: none; border-radius: 6px; font-weight: bold;">
+                        Verify Code
+                    </a>
+                    </p>
+
+                    <p><strong>Note:</strong> This code will expire in 5 minutes. If you didn’t request this, you can safely ignore this email.</p>
+                    
+                    <p>Thanks,<br>The Support Team</p>
                 </div>
             `
         });
@@ -396,17 +412,29 @@ export async function sendForgotPasswordCode(req, res) {
         let sendingEmail = await sendEmail.sendMail({
             from: process.env.NODE_CODE_SENDING_EMAIL_ADDRESS,
             to: existingUser.email,
-            subject: 'Forgot Password Code Request:',
+            subject: 'Forgot Your Password – Verification Code Inside',
             html: `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
-                    <h2 style="color: #333;">Password Reset Code</h2>
+                    <h2 style="text-align: center; color: #24292e;">GitHub-style Password Reset</h2>
+
                     <p>Hello ${existingUser.email || ''},</p>
-                    <p>We received a request to reset your password. Use the code below to proceed with resetting your password:</p>
-                    <div style="text-align: center; margin: 20px 0;">
-                        <span style="font-size: 32px; font-weight: bold; color: #4CAF50;">${resetCode}</span>
+
+                    <p>We received a request to reset your password. Use the verification code below to proceed:</p>
+
+                    <div style="text-align: center; margin: 30px 0;">
+                    <span style="font-size: 36px; font-weight: bold; color: #4CAF50;">${resetCode}</span>
                     </div>
-                    <p><strong>Note:</strong> This code will expire in 5 minutes for security reasons. If you did not request a password reset, please ignore this email or contact support immediately.</p>
-                    <p>Thank you,<br/>The Support Team</p>
+
+                    <p style="text-align: center;">
+                    <a  href="http://localhost:3000/verify-reset-code?email=${existingUser.email}" 
+                        style="display: inline-block; padding: 12px 24px; background-color: #2ea44f; color: white; text-decoration: none; border-radius: 6px; font-weight: bold;">
+                        Verify Code
+                    </a>
+                    </p>
+
+                    <p style="margin-top: 20px;"><strong>Note:</strong> This code will expire in 5 minutes for your security. If you did not request this password reset, you can safely ignore this email.</p>
+
+                    <p>Thanks,<br>The Support Team</p>
                 </div>
             `
         });

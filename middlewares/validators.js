@@ -42,9 +42,9 @@ const emailSchema = Joi.string()
 .required()
 .email({ tlds: { allow: ['com', 'net'] } })
 .messages({
-  'string.email': 'Email must be a valid email address with .com or .net domain.',
-  'string.empty': 'Email cannot be empty.',
-  'any.required': 'Email is required.',
+  'string.email': 'email must be a valid email address with .com or .net domain.',
+  'string.empty': 'email cannot be empty.',
+  'any.required': 'email is required.',
   'string.min': 'Email must be at least 5 characters long.',
   'string.max': 'Email must not exceed 60 characters.'
 });

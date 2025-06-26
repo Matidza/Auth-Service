@@ -4,15 +4,15 @@ const userSchema = new mongoose.Schema({
     //Email
     email: {
         type: String,
-        required: [true, "Email is required!"],
+        required: [true, "email is required!"],
         trim: true,
-        unique: [true, "Email already exists"],
-        minlength: [5, "Email must be a minimum of 5 characters"],
+        unique: [true, "email already exists"],
+        minlength: [5, "email must be a minimum of 5 characters"],
         lowercase: true,
     },
     password: {
         type: String,
-        required: [true, "Password must be provided!"],
+        required: [true, "password must be provided!"],
         trim: true,
         select: false,
     },
