@@ -105,7 +105,7 @@ export async function signIn(req, res) {
             return res.status(401).json({
                 success: false,
                 field: 'email',
-                message: "User doesn't exist"
+                message: "User doesn't exist, create one!"
             });
         }
 
@@ -115,7 +115,7 @@ export async function signIn(req, res) {
             return res.status(401).json({
                 success: false,
                 field: 'password',
-                message: "Invalid credentials!" // Password mismatch
+                message: "Invalid Password!" // Password mismatch
             });
         }
 
@@ -195,6 +195,7 @@ export async function sendVarificationCode(req, res) {
         // Check if user exists
         if (!existingUser) {
             return res.status(401).json({
+                field: "email",
                 success: false,
                 message: "User doesn't exist"
             });
@@ -202,6 +203,7 @@ export async function sendVarificationCode(req, res) {
         // check if user is verified
         if (existingUser.verified) {
             return res.status(401).json({
+                field: "email",
                 success: false,
                 message: "User is already verified"
             });
@@ -216,7 +218,7 @@ export async function sendVarificationCode(req, res) {
             subject: 'Verification Code Request',
             html: `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
-                    <h2 style="text-align: center; color: #24292e;">Reset your password</h2>
+                    <h2 style="text-align: center; color: #24292e;">Verify Your New Account</h2>
                     
                     <p>Hello ${existingUser.email || ''},</p>
                     
@@ -227,7 +229,7 @@ export async function sendVarificationCode(req, res) {
                     </div>
                     
                     <p style="text-align: center;">
-                    <a  href="http://localhost:3000/verify-reset-code?email=${existingUser.email}" 
+                    <a  href="http://localhost:3000/verify-verification-code" 
                         style="display: inline-block; padding: 12px 24px; background-color: #2ea44f; color: white; text-decoration: none; border-radius: 6px; font-weight: bold;">
                         Verify Code
                     </a>

@@ -23,8 +23,8 @@ export async function data(req, res)  {
 router.post('/signup', catchAsync(signUp))
 router.post('/signin', catchAsync(signIn))
 router.post('/signout', identifier, catchAsync(signOut))
-router.patch('/send-verification-code', identifier, catchAsync(sendVarificationCode))
-router.patch('/verify-verification-code', identifier, catchAsync(verifyVarificationCode))
+router.patch('/send-verification-code',  catchAsync(sendVarificationCode))
+router.patch('/verify-verification-code',  catchAsync(verifyVarificationCode))
 
 router.patch('/change-password', identifier, catchAsync(changePassword))
 router.patch('/forgot-password',  catchAsync(sendForgotPasswordCode))
