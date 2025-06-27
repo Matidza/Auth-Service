@@ -284,7 +284,6 @@ export async function verifyVarificationCode(req, res) {
         const { error, value } = acceptedCodeSchema.validate({ email, providedCodeValue });
         if (error) {
             return res.status(401).json({
-                field: error.details[0].context.key,
                 success: false,
                 message: error.details[0].message
             });
@@ -295,7 +294,6 @@ export async function verifyVarificationCode(req, res) {
 
         if (!existingUser) {
             return res.status(401).json({
-                field: email,
                 success: false,
                 message: "User doesn't exist"
             });
@@ -303,14 +301,12 @@ export async function verifyVarificationCode(req, res) {
 
         if (existingUser.verified) {
             return res.status(401).json({
-                field: verified,
                 success: false,
                 message: "User is already verified"
             });
         }
         if (!existingUser.verificationCode  || !existingUser.verificationCodeValidation) {
             return res.status(400).json({
-                field: verificationCode || verifyVarificationCode,
                 success: false,
                 message: "Something went wrong"
             });
