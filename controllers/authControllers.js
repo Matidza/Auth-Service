@@ -90,85 +90,86 @@ export default signUp;
  */
 export async function signIn(req, res) {
     const { email, password } = req.body;
+
     try {
-        // Step 1: Validate input using Joi schema
+        // Step 1: Validate input
         const { error } = signInSchema.validate({ email, password });
         if (error) {
             return res.status(400).json({
-                field: error.details[0].context.key,
                 success: false,
-                message: error.details[0].message // Return the first validation error
+                field: error.details[0].context.key,
+                message: error.details[0].message
             });
         }
 
-        // Step 2: Check if user exists in the database by email
+        // Step 2: Find user
         const existingUser = await UserModel.findOne({ email }).select("+password");
         if (!existingUser) {
             return res.status(401).json({
                 success: false,
                 field: 'email',
-                message: "User doesn't exist, create one!"
+                message: "User doesn't exist. Please sign up."
             });
         }
 
-        // Step 3: Compare entered password with stored hashed password
+        // Step 3: Optional verification check
+        if (!existingUser.verified) {
+            return res.status(403).json({
+                success: false,
+                field: 'email',
+                message: "Your account is not verified. Please check your email."
+            });
+        }
+
+        // Step 4: Check password
         const isPasswordValid = await decryptHashedPassword(password, existingUser.password);
         if (!isPasswordValid) {
             return res.status(401).json({
                 success: false,
                 field: 'password',
-                message: "Invalid Password!" // Password mismatch
+                message: "Invalid password"
             });
         }
 
-        // Step 4: Generate Access Token (short-lived) and Refresh Token (long-lived)
+        // Step 5: Generate access token
         const accessToken = jwt.sign(
             {
                 userId: existingUser._id,
                 email: existingUser.email,
                 verified: existingUser.verified
             },
-            process.env.SECRET_ACCESS_TOKEN, // Secret for access tokens
+            process.env.SECRET_ACCESS_TOKEN,
             { expiresIn: "0.5h" }
         );
-        /** 
-        const refreshToken = jwt.sign(
-            { userId: existingUser._id },
-            process.env.SECRET_REFRESH_TOKEN, // Secret for refresh tokens
-            { expiresIn: "1d" } // 1 day expiry
-        );*/
 
-        // Step 5: Set cookies
+        // Step 6: Set cookie & return response
         res
             .cookie("Authorization", `Bearer ${accessToken}`, {
-                expires: new Date(Date.now() + 3 * 60 * 60 * 1000), // 3h
+                expires: new Date(Date.now() + 3 * 60 * 60 * 1000),
                 httpOnly: process.env.NODE_ENV === "production",
                 secure: process.env.NODE_ENV === "production",
                 sameSite: "strict"
-            })/*** 
-            .cookie("RefreshToken", refreshToken, {
-                expires: new Date(Date.now() + 24 * 60 * 60 * 1000), // 1 day
-                httpOnly: true,
-                secure: process.env.NODE_ENV === "production",
-                sameSite: "strict"
-            })*/
+            })
             .json({
                 success: true,
+                field: null,
+                message: "Logged in successfully",
                 user: existingUser._id,
-                //refreshToken: refreshToken,
-                accessToken: accessToken,
-                message: "Logged in successfully"
+                accessToken: accessToken
             });
-            console.log(`\n User: ${existingUser._id}\n accessToken: ${accessToken}`)
+
+        console.log(`\nUser: ${existingUser._id}\nAccessToken: ${accessToken}`);
+
     } catch (error) {
-        // Log and handle unexpected server error
         console.error("SignIn Error:", error);
         res.status(500).json({
             success: false,
+            field: null,
             message: "Internal server error"
         });
     }
 }
+
 
 
 /**
