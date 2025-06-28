@@ -262,6 +262,84 @@ export async function sendVarificationCode(req, res) {
 }
 
 
+export async function verifyVarificationCode(req, res) {
+    let { email, providedCodeValue } = req.body;
+
+    try {
+        const { error } = acceptedCodeSchema.validate({ email, providedCodeValue });
+        if (error) {
+            return res.status(400).json({
+                field: error.details[0].context.key,
+                success: false,
+                message: error.details[0].message
+            });
+        }
+
+        providedCodeValue = providedCodeValue.toString();
+        const existingUser = await UserModel.findOne({ email }).select('+verificationCode +verificationCodeValidation');
+
+        if (!existingUser) {
+            return res.status(404).json({
+                field: 'email',
+                success: false,
+                message: "User doesn't exist"
+            });
+        }
+
+        if (existingUser.verified) {
+            return res.status(400).json({
+                field: null,
+                success: false,
+                message: "User is already verified"
+            });
+        }
+
+        if (!existingUser.verificationCode || !existingUser.verificationCodeValidation) {
+            return res.status(400).json({
+                field: null,
+                success: false,
+                message: "Verification code not found. Please request a new one."
+            });
+        }
+
+        if (Date.now() - existingUser.verificationCodeValidation > 5 * 60 * 1000) {
+            return res.status(401).json({
+                field: null,
+                success: false,
+                message: "Code has expired! Please request a new one."
+            });
+        }
+
+        const hashedCodeValue = hmacProcess(providedCodeValue, process.env.HMAC_VERIFICATION_CODE_SECRET);
+
+        if (hashedCodeValue === existingUser.verificationCode) {
+            existingUser.verified = true;
+            existingUser.verificationCode = undefined;
+            existingUser.verificationCodeValidation = undefined;
+            await existingUser.save();
+
+            return res.status(200).json({
+                success: true,
+                field: null,
+                message: "Code verified successfully"
+            });
+        }
+
+        return res.status(400).json({
+            field: 'providedCodeValue',
+            success: false,
+            message: "Invalid verification code"
+        });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            field: null,
+            success: false,
+            message: "Internal server error"
+        });
+    }
+}
 
 
 
@@ -319,86 +397,7 @@ export async function changePassword(req, res) {
 }
 
 
-export async function sendForgotPasswordCode(req, res) {
-    const {email} = req.body;
-    try {
 
-        const { error } = sendCodeSchema.validate({ email });
-        if (error) {
-            return res.status(400).json({
-                field: error.details[0].context.key,
-                success: false,
-                message: error.details[0].message // Return the first validation error
-            });
-        }
-
-        const existingUser = await UserModel.findOne({email})
-        // Check if user exists
-        if (!existingUser) {
-            return res.status(401).json({
-                field: "email",
-                success: false,
-                message: "User doesn't exist"
-            });
-        }
-
-        // Generate reset password code
-        const resetCode = Math.floor(100000 + Math.random() * 900000).toString(); // ensures 6 digits
-        console.log(resetCode)
-        // Send email to user
-        let sendingEmail = await sendEmail.sendMail({
-            from: process.env.NODE_CODE_SENDING_EMAIL_ADDRESS,
-            to: existingUser.email,
-            subject: 'Forgot Your Password – Verification Code Inside',
-            html: `
-                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
-                    <h2 style="text-align: center; color: #24292e;">GitHub-style Password Reset</h2>
-
-                    <p>Hello ${existingUser.email || ''},</p>
-
-                    <p>We received a request to reset your password. Use the verification code below to proceed:</p>
-
-                    <div style="text-align: center; margin: 30px 0;">
-                    <span style="font-size: 36px; font-weight: bold; color: #4CAF50;">${resetCode}</span>
-                    </div>
-
-                    <p style="text-align: center;">
-                    <a  href="http://localhost:3000/verify-reset-code?email=${existingUser.email}" 
-                        style="display: inline-block; padding: 12px 24px; background-color: #2ea44f; color: white; text-decoration: none; border-radius: 6px; font-weight: bold;">
-                        Verify Code
-                    </a>
-                    </p>
-
-                    <p style="margin-top: 20px;"><strong>Note:</strong> This code will expire in 5 minutes for your security. If you did not request this password reset, you can safely ignore this email.</p>
-
-                    <p>Thanks,<br>The Support Team</p>
-                </div>
-            `
-        });
-       
-        
-        if (sendingEmail.accepted[0] === existingUser.email ) {
-            const hashedValue = hmacProcess(resetCode, process.env.HMAC_VERIFICATION_CODE_SECRET)
-            existingUser.forgotPasswordCode = hashedValue;
-            existingUser.forgotPasswordCodeValidation = Date.now();
-
-            await existingUser.save()
-            return res.status(200).json({
-                success: true,
-                message: "Code sent to your email"
-            })
-        }
-
-        res.status(400).json({
-            success: false,
-            message: "Code sent failed"
-        });
-        console.log(sendingEmail)
-
-    }catch (error) {
-        console.log(error)
-    }
-}
 
 
 
