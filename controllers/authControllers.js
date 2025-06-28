@@ -477,76 +477,79 @@ export async function sendForgotPasswordCode(req, res) {
 }
 
 
-
-
 export async function verifysendForgotPasswordCode(req, res) {
-    let { email, providedCodeValue, newPassword } = req.body;
+    const { email, providedCodeValue, newPassword } = req.body;
+
     try {
-        const { error, value } = acceptForgotPasswordSchema.validate({ email, providedCodeValue, newPassword });
+        const { error } = acceptForgotPasswordSchema.validate({ email, providedCodeValue, newPassword });
         if (error) {
-            return res.status(401).json({
+            return res.status(400).json({
                 success: false,
+                field: error.details[0].context.key,
                 message: error.details[0].message
             });
         }
 
-        providedCodeValue = providedCodeValue.toString();
-        const existingUser = await UserModel.findOne({ email }).select('+forgotPasswordCode +forgotPasswordCodeValidation');
+        const user = await UserModel.findOne({ email }).select('+forgotPasswordCode +forgotPasswordCodeValidation');
 
-        if (!existingUser) {
-            return res.status(401).json({
-                field: 'email',
+        if (!user) {
+            return res.status(404).json({
                 success: false,
+                field: 'email',
                 message: "User doesn't exist"
             });
         }
 
-       
-        if (!existingUser.forgotPasswordCode  || !existingUser.forgotPasswordCodeValidation) {
+        if (!user.forgotPasswordCode || !user.forgotPasswordCodeValidation) {
             return res.status(400).json({
-                
                 success: false,
-                message: "Something went wrong"
+                field: null,
+                message: "Reset code not found. Please request a new one."
             });
         }
 
-        // Check if code has expired
-        if (Date.now() - existingUser.forgotPasswordCodeValidation > 5 * 60 * 1000) {
+        if (Date.now() - user.forgotPasswordCodeValidation > 5 * 60 * 1000) {
             return res.status(401).json({
                 success: false,
-                message: "Code has expired!"
+                field: null,
+                message: "Code has expired! Please request a new one."
             });
         }
 
-        const hashedCodeValue = hmacProcess(providedCodeValue, process.env.HMAC_VERIFICATION_CODE_SECRET);
-        
-        if (hashedCodeValue === existingUser.forgotPasswordCode) {
-            const hashedPassword = await doHash(newPassword, 12);
-            existingUser.password = hashedPassword
-            existingUser.forgotPasswordCode = undefined;
-            existingUser.forgotPasswordCodeValidation = undefined;
-            await existingUser.save();
+        const hashedCode = hmacProcess(providedCodeValue.toString(), process.env.HMAC_VERIFICATION_CODE_SECRET);
 
-            return res.status(200).json({
-                success: true,
-                message: "Password updated successfully!"
+        if (hashedCode !== user.forgotPasswordCode) {
+            return res.status(400).json({
+                success: false,
+                field: 'providedCodeValue',
+                message: "Invalid code"
             });
         }
 
-        return res.status(400).json({
-            field: 'providedCodeValue',
-            success: false,
-            message: "Invalid code"
+        const hashedPassword = await doHash(newPassword, 12);
+        user.password = hashedPassword;
+        user.forgotPasswordCode = undefined;
+        user.forgotPasswordCodeValidation = undefined;
+        await user.save();
+
+        return res.status(200).json({
+            success: true,
+            field: null,
+            message: "Password updated successfully!"
         });
 
-    } catch (error) {
-        console.log(error);
-        res.status(500).json({
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({
             success: false,
+            field: null,
             message: "Internal server error"
         });
     }
 }
+
+
+
 
 /**
  Absolutely! Here’s a **comprehensive, full summary of building a house in South Africa** — the **smart, safe way** — using a **Project Manager (PM)** and a **lawyer** to protect your budget, timelines, and peace of mind.
