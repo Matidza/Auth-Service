@@ -15,70 +15,56 @@ dotenv.config();
  * This function registers a new user by validating input, checking for duplicates,
  * hashing the password, and storing the user in the database.
  */
-const signUp = async (req, res) => {
+export const signUp = async (req, res) => {
     const { email, password } = req.body;
+
     try {
-        // Step 1: Validate input using Joi schema
+        // Validate input
         const { error } = signUpSchema.validate({ email, password });
         if (error) {
             return res.status(400).json({
                 field: error.details[0].context.key,
                 success: false,
-                message: error.details[0].message // Return validation error message
+                message: error.details[0].message
             });
         }
 
-        // Step 2: Check if the email already exists in the database
-        const existingUser = await UserModel.findOne({ email, password }); // password should not be in this query
+        // Check if email already exists
+        const existingUser = await UserModel.findOne({ email });
         if (existingUser) {
             return res.status(409).json({
-                success: false,
                 field: 'email',
-                message: "Email already exists, try a different one!"
+                success: false,
+                message: "Email already exists, try a different one."
             });
         }
 
+        // Hash the password
+        const hashedPassword = await doHash(password, 12);
 
-        // Step 3: Hash the password using a secure algorithm
-        const hashedPassword = await doHash(password, 12); // doHash is assumed to be a bcrypt wrapper
-
-        // Step 4 (optional): You could generate access & refresh tokens here if needed
-        /*
-        const userTokenValue = jwt.sign({
-            id: newUser._id,
-            email: newUser.email
-        }, process.env.ACCESS_TOKEN, { expiresIn: '3h' });
-        */
-
-        // Step 5: Save the new user to the database
-        const newUser = new UserModel({
-            email: email,
-            password: hashedPassword
-        });
-
+        // Create new user
+        const newUser = new UserModel({ email, password: hashedPassword });
         const result = await newUser.save();
 
-        // Step 6: Remove password from response for security
         result.password = undefined;
 
-        // Step 7: Return success response
-        res.status(201).json({
+        return res.status(201).json({
             success: true,
-            message: "Your account has been created successfully",
+            field: null,
+            message: "🎉 Your account has been created successfully",
             result
         });
-        console.log(result)
 
-    } 
-    catch (error) {
-        console.error("SignUp Error:", error["unique"]);
-        res.status(500).json({
+    } catch (error) {
+        console.error("SignUp Error:", error);
+        return res.status(500).json({
+            field: null,
             success: false,
-            field: 'email',
-            message: `email already exists, try a different one!`
+            message: "Internal server error. Please try again later."
         });
     }
 };
+
 export default signUp;
 
 
