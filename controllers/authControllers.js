@@ -397,6 +397,84 @@ export async function changePassword(req, res) {
 }
 
 
+export async function sendForgotPasswordCode(req, res) {
+    const { email } = req.body;
+
+    try {
+        const { error } = sendCodeSchema.validate({ email });
+        if (error) {
+            return res.status(400).json({
+                field: error.details[0].context.key,
+                success: false,
+                message: error.details[0].message
+            });
+        }
+
+        const existingUser = await UserModel.findOne({ email });
+
+        if (!existingUser) {
+            return res.status(404).json({
+                field: "email",
+                success: false,
+                message: "User doesn't exist"
+            });
+        }
+
+        const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
+        console.log("Reset Code:", resetCode);
+
+        const sendingEmail = await sendEmail.sendMail({
+            from: process.env.NODE_CODE_SENDING_EMAIL_ADDRESS,
+            to: existingUser.email,
+            subject: 'Forgot Your Password – Verification Code Inside',
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
+                    <h2 style="text-align: center; color: #24292e;">GitHub-style Password Reset</h2>
+                    <p>Hello ${existingUser.email || ''},</p>
+                    <p>We received a request to reset your password. Use the verification code below to proceed:</p>
+                    <div style="text-align: center; margin: 30px 0;">
+                        <span style="font-size: 36px; font-weight: bold; color: #4CAF50;">${resetCode}</span>
+                    </div>
+                    <p style="text-align: center;">
+                        <a href="http://localhost:3000/verify-reset-code?email=${existingUser.email}"
+                           style="display: inline-block; padding: 12px 24px; background-color: #2ea44f; color: white; text-decoration: none; border-radius: 6px; font-weight: bold;">
+                            Verify Code
+                        </a>
+                    </p>
+                    <p><strong>Note:</strong> This code will expire in 5 minutes. If you didn’t request this, you can safely ignore this email.</p>
+                    <p>Thanks,<br>The Support Team</p>
+                </div>
+            `
+        });
+
+        if (sendingEmail.accepted[0] === existingUser.email) {
+            const hashedValue = hmacProcess(resetCode, process.env.HMAC_VERIFICATION_CODE_SECRET);
+            existingUser.forgotPasswordCode = hashedValue;
+            existingUser.forgotPasswordCodeValidation = Date.now();
+            await existingUser.save();
+
+            return res.status(200).json({
+                success: true,
+                field: null,
+                message: "Code sent to your email"
+            });
+        }
+
+        return res.status(400).json({
+            success: false,
+            field: null,
+            message: "Failed to send the verification code"
+        });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            success: false,
+            field: null,
+            message: "Internal server error"
+        });
+    }
+}
 
 
 
