@@ -131,11 +131,11 @@ export async function signIn(req, res) {
 
         // Step 6: Set cookie & return response
         res
-            .cookie("Authorization", accessToken, {
-                httpOnly: true, // allow client-side access
+            .cookie("accessToken", accessToken, {
+                httpOnly: true,
                 sameSite: "strict",
                 maxAge: 3 * 60 * 60 * 1000, // 3 hours
-                secure: true // use true in production
+                secure: process.env.NODE_ENV === "production" // make sure HTTPS is used in prod
             })
             .json({
                 success: true,
@@ -144,6 +144,7 @@ export async function signIn(req, res) {
                 user: existingUser._id,
                 accessToken: accessToken
             });
+
 
         console.log(`\nUser: ${existingUser._id}\nAccessToken: ${accessToken}`);
 
@@ -165,17 +166,18 @@ export async function signIn(req, res) {
  * effectively logging them out by removing the stored JWT token.
  */
 export async function signOut(req, res) {
-    // Clear the "Authorization" cookie to log the user out
-    res.clearCookie("Authorization", {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict"
-    }).status(200).json({
-        success: true,
-        message: "Logged out successfully"
+    res.clearCookie("accessToken", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict"
     });
-    // Note: Since JWTs are stateless, there's nothing to "delete" on the server unless using a token blacklist
-}
+  
+    return res.status(200).json({
+      success: true,
+      message: "Logged out successfully"
+    });
+  }
+  
 
 
 export async function sendVarificationCode(req, res) {
