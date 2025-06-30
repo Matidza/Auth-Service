@@ -42,7 +42,7 @@ export function identifier(req, res, next) {
         });
     }
 }
- */
+
 
 import jwt from 'jsonwebtoken';
 import dotenv from "dotenv";
@@ -63,6 +63,35 @@ export function identifier(req, res, next) {
     }
 
     const token = authHeader.split(' ')[1].trim();
+
+    try {
+        const jwtVerified = jwt.verify(token, process.env.SECRET_ACCESS_TOKEN);
+        req.user = jwtVerified;
+        next();
+    } catch (err) {
+        console.error("JWT Error:", err.message);
+        return res.status(401).json({
+            success: false,
+            message: "Invalid or expired token"
+        });
+    }
+}
+ */
+
+import jwt from 'jsonwebtoken';
+import dotenv from "dotenv";
+dotenv.config();
+
+export function identifier(req, res, next) {
+    // ✅ Get token from cookie, not header
+    const token = req.cookies.accessToken;
+
+    if (!token) {
+        return res.status(403).json({
+            success: false,
+            message: "Unauthorized: No token provided"
+        });
+    }
 
     try {
         const jwtVerified = jwt.verify(token, process.env.SECRET_ACCESS_TOKEN);

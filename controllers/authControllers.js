@@ -131,14 +131,14 @@ export async function signIn(req, res) {
 
         // Step 6: Set cookie & return response
         res
-            .cookie("Authorization", `Bearer ${accessToken}`, {
-                httpOnly: false, // allow client-side access
+            .cookie("Authorization", accessToken, {
+                httpOnly: true, // allow client-side access
                 sameSite: "strict",
-                expires: 3 * 60 * 60 * 1000, // 3 hours
-                secure: false // use true in production
+                maxAge: 3 * 60 * 60 * 1000, // 3 hours
+                secure: true // use true in production
             })
             .json({
-                success: false,
+                success: true,
                 field: null,
                 message: "Logged in successfully",
                 user: existingUser._id,
