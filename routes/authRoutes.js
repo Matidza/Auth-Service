@@ -30,4 +30,16 @@ router.patch('/change-password', identifier, catchAsync(changePassword))
 router.patch('/forgot-password',  catchAsync(sendForgotPasswordCode))
 router.patch('/reset-password', catchAsync(verifysendForgotPasswordCode))
 
+router.get('/check-auth', identifier, (req, res) => {
+  res.status(200).json({
+    success: true,
+    user: {
+      id: req.user.userId,
+      email: req.user.email,
+      verified: req.user.verified
+    }
+  });
+});
+
+
 export default router
