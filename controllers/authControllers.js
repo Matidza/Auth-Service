@@ -99,13 +99,14 @@ export async function signIn(req, res) {
         }
 
         // Step 3: Optional verification check
+        /** 
         if (!existingUser.verified) {
             return res.status(403).json({
                 success: false,
                 field: 'email',
                 message: "Your account is not verified. Please check your email."
             });
-        }
+        }*/
 
         // Step 4: Check password
         const isPasswordValid = await decryptHashedPassword(password, existingUser.password);
@@ -131,13 +132,13 @@ export async function signIn(req, res) {
         // Step 6: Set cookie & return response
         res
             .cookie("Authorization", `Bearer ${accessToken}`, {
-                expires: new Date(Date.now() + 3 * 60 * 60 * 1000),
-                httpOnly: process.env.NODE_ENV === "production",
-                secure: process.env.NODE_ENV === "production",
-                sameSite: "strict"
+                httpOnly: false, // allow client-side access
+                sameSite: "strict",
+                expires: 3 * 60 * 60 * 1000, // 3 hours
+                secure: false // use true in production
             })
             .json({
-                success: true,
+                success: false,
                 field: null,
                 message: "Logged in successfully",
                 user: existingUser._id,
