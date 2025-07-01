@@ -47,13 +47,43 @@ export const signUp = async (req, res) => {
         const result = await newUser.save();
 
         result.password = undefined;
+        const accessToken = jwt.sign(
+            {
+                userId: newUser._id,
+                email: newUser.email,             
+            },
+            process.env.SECRET_ACCESS_TOKEN,
+            { expiresIn: "0.5h" }
+        );
+        // Step 6: Set cookie & return response
+        return res.cookie("accessToken", accessToken, {
+                httpOnly: true,
+                sameSite: "strict",
+                maxAge: 3 * 60 * 60 * 1000, // 3 hours
+                secure: process.env.NODE_ENV === "production" // make sure HTTPS is used in prod
+            })
+            .json({
+                success: true,
+                field: null,
+                message: "🎉 Your account has been created successfully",
+                user: newUser._id,
+                accessToken: accessToken
+            })
+            
+            // Used for when you use localStorage in the client-side 
+            // instead of cookie-based flow or auth
+            /**
+            .status(201).json({
+                success: true,
+                field: null,
+                message: "🎉 Your account has been created successfully",
+                result
+            }) */
+           ;
 
-        return res.status(201).json({
-            success: true,
-            field: null,
-            message: "🎉 Your account has been created successfully",
-            result
-        });
+        
+        
+
 
     } catch (error) {
         console.error("SignUp Error:", error);
@@ -66,72 +96,35 @@ export const signUp = async (req, res) => {
 };
 
 export default signUp;
-/**
- * // controllers/authController.js
-import jwt from 'jsonwebtoken';
-import UserModel from '../models/User.js';
-import { doHash } from '../utils/hash.js'; // if you use a custom hash function
-import { signUpSchema } from '../validators/authValidation.js';
 
-// Local signup handler
-export const signUp = async (req, res) => {
-    const { email, password } = req.body;
 
-    try {
-        const { error } = signUpSchema.validate({ email, password });
-        if (error) {
-            return res.status(400).json({
-                field: error.details[0].context.key,
-                success: false,
-                message: error.details[0].message
-            });
-        }
 
-        const existingUser = await UserModel.findOne({ email });
-        if (existingUser) {
-            return res.status(409).json({
-                field: 'email',
-                success: false,
-                message: "Email already exists, try a different one."
-            });
-        }
 
-        const hashedPassword = await doHash(password, 12);
-        const newUser = new UserModel({ email, password: hashedPassword, provider: 'local' });
-        const result = await newUser.save();
-
-        result.password = undefined;
-
-        return res.status(201).json({
-            success: true,
-            field: null,
-            message: "🎉 Your account has been created successfully",
-            result
-        });
-
-    } catch (error) {
-        console.error("SignUp Error:", error);
-        return res.status(500).json({
-            field: null,
-            success: false,
-            message: "Internal server error. Please try again later."
-        });
+export function isUserloggedIn (req, res) {
+  res.status(200).json({
+    success: true,
+    user: {
+      id: req.user.userId,
+      email: req.user.email,
+      verified: req.user.verified
     }
-};
+  })
+}
 
 // OAuth callback handler (Google/GitHub)
 export const oauthCallbackHandler = async (req, res) => {
+    const { id, email, name, provider } = req.user;
     try {
-        const { id, email, name, provider } = req.user;
-
         if (!email) {
-            return res.status(400).json({ success: false, message: "Email not found in OAuth profile." });
+            return res.status(400).json({
+                success: false,
+                message: "Email not found in OAuth profile"
+            });
         }
 
-        let user = await UserModel.findOne({ email });
-
-        if (!user) {
-            user = await UserModel.create({
+        const existingUser = await UserModel.findOne({email});
+        if (!existingUser) {
+            existingUser = await UserModel.create({
                 email,
                 name,
                 provider,
@@ -139,18 +132,37 @@ export const oauthCallbackHandler = async (req, res) => {
             });
         }
 
-        const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+        const accessToken = jwt.sign(
+            {
+                userId: existingUser._id,
+                email: existingUser.email
+            },
+            process.env.SECRET_ACCESS_TOKEN,
+            { expiresIn: "0.5h" }
+        );
 
-        // Redirect to frontend with token (or send JSON if used as API)
-        return res.redirect(`http://localhost:3000/oauth-redirect?token=${token}`);
-
-    } catch (error) {
-        console.error('OAuth Callback Error:', error);
-        return res.status(500).json({ success: false, message: 'OAuth signup failed.' });
+        res
+            .cookie("accessToken", accessToken, {
+                httpOnly: true,
+                sameSite: "strict",
+                maxAge: 3 * 60 * 60 * 1000, // 3 hours
+                secure: process.env.NODE_ENV === "production" // make sure HTTPS is used in prod
+            })
+            .json({
+                success: true,
+                field: null,
+                message: "Account created successfully",
+                user: existingUser._id,
+                accessToken: accessToken
+            });
+        
+    } catch(error) {
+        console.log("OAuth error:", error.message);
+        res.status(500).json({
+            message: "OAuth Login failed."
+        })
     }
 };
-
- */
 
 /**
  * Sign in a user
@@ -201,13 +213,15 @@ export async function signIn(req, res) {
                 message: "Invalid password"
             });
         }
-
+        const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
+        
         // Step 5: Generate access token
         const accessToken = jwt.sign(
             {
                 userId: existingUser._id,
                 email: existingUser.email,
-                verified: existingUser.verified
+                verified: existingUser.verified,
+                //resetCode: resetCode
             },
             process.env.SECRET_ACCESS_TOKEN,
             { expiresIn: "0.5h" }
@@ -225,11 +239,9 @@ export async function signIn(req, res) {
                 success: true,
                 field: null,
                 message: "Logged in successfully",
-                user: existingUser._id,
+                userId: existingUser._id,
                 accessToken: accessToken
             });
-
-
         console.log(`\nUser: ${existingUser._id}\nAccessToken: ${accessToken}`);
 
     } catch (error) {
