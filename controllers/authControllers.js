@@ -7,7 +7,7 @@ import doHash, { decryptHashedPassword, hmacProcess } from "../utilities/hashing
 import jwt from 'jsonwebtoken';
 import dotenv from "dotenv";
 import sendEmail from "../middlewares/sendEmail.js";
-
+import crypto from 'crypto';
 
 dotenv.config();
 /**
@@ -43,7 +43,8 @@ export const signUp = async (req, res) => {
         const hashedPassword = await doHash(password, 12);
 
         // Create new user
-        const newUser = new UserModel({ email, password: hashedPassword });
+       const newUser = new UserModel({ email, password: hashedPassword, provider: 'local' });
+ 
         const result = await newUser.save();
 
         result.password = undefined;
@@ -122,13 +123,14 @@ export const oauthCallbackHandler = async (req, res) => {
             });
         }
 
-        const existingUser = await UserModel.findOne({email});
+        let existingUser = await UserModel.findOne({ email });
         if (!existingUser) {
             existingUser = await UserModel.create({
                 email,
                 name,
                 provider,
-                oauthId: id
+                oauthId: id,
+                password: crypto.randomBytes(16).toString("hex")
             });
         }
 
@@ -138,31 +140,32 @@ export const oauthCallbackHandler = async (req, res) => {
                 email: existingUser.email
             },
             process.env.SECRET_ACCESS_TOKEN,
-            { expiresIn: "0.5h" }
+            { expiresIn: "6h" } // 👈 increase for dev
         );
 
         res
             .cookie("accessToken", accessToken, {
                 httpOnly: true,
                 sameSite: "strict",
-                maxAge: 3 * 60 * 60 * 1000, // 3 hours
-                secure: process.env.NODE_ENV === "production" // make sure HTTPS is used in prod
+                maxAge: 6 * 60 * 60 * 1000, // match JWT (6 hours)
+                secure: process.env.NODE_ENV === "production"
             })
             .json({
                 success: true,
                 field: null,
                 message: "Account created successfully",
                 user: existingUser._id,
-                accessToken: accessToken
+                accessToken
             });
-        
-    } catch(error) {
+
+    } catch (error) {
         console.log("OAuth error:", error.message);
         res.status(500).json({
             message: "OAuth Login failed."
-        })
+        });
     }
 };
+
 
 /**
  * Sign in a user
