@@ -149,14 +149,8 @@ export const oauthCallbackHandler = async (req, res) => {
                 sameSite: "strict",
                 maxAge: 6 * 60 * 60 * 1000, // match JWT (6 hours)
                 secure: process.env.NODE_ENV === "production"
-            })
-            .json({
-                success: true,
-                field: null,
-                message: "Account created successfully",
-                user: existingUser._id,
-                accessToken
-            });
+            }).redirect("http://localhost:3000/signin")
+            
 
     } catch (error) {
         console.log("OAuth error:", error.message);

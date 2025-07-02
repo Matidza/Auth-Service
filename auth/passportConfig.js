@@ -9,6 +9,7 @@ passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     callbackURL: "/api/auth/google/callback",
+    scope: ['user:email'], // ✅ Request access to user email
 }, (accessToken, refreshToken, profile, done) => {
     done(null, {
         id: profile.id,
@@ -21,14 +22,42 @@ passport.use(new GoogleStrategy({
 passport.use(new GitHubStrategy({
     clientID: process.env.GITHUB_CLIENT_ID,
     clientSecret: process.env.GITHUB_CLIENT_SECRET,
-    callbackURL: "/api/auth/github/callback"
-}, (accessToken, refreshToken, profile, done) => {
+    callbackURL: "/api/auth/github/callback",
+    scope: ['user:email']  // Make sure you're requesting emails
+}, async (accessToken, refreshToken, profile, done) => {
+    let email = null;
+
+    // GitHub may return emails in a separate array or not at all
+    if (profile.emails && profile.emails.length > 0) {
+        email = profile.emails[0].value;
+    } else {
+        // Fallback: manually fetch primary email using accessToken
+        try {
+            const response = await fetch('https://api.github.com/user/emails', {
+                headers: {
+                    'Authorization': `token ${accessToken}`,
+                    'User-Agent': 'Node.js'
+                }
+            });
+            const emails = await response.json();
+            const primaryEmailObj = emails.find(emailObj => emailObj.primary && emailObj.verified);
+            email = primaryEmailObj ? primaryEmailObj.email : null;
+        } catch (error) {
+            return done(error, null);
+        }
+    }
+
+    if (!email) {
+        return done(new Error('No email found in GitHub profile'), null);
+    }
+
     done(null, {
         id: profile.id,
-        email: profile.emails[0].value,
+        email: email,
         name: profile.username,
         provider: "github"
     });
 }));
+
 
 export default passport;
