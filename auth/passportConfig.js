@@ -1,6 +1,7 @@
 import passport from "passport";
 import GoogleStrategy from "passport-google-oauth20";
 import GitHubStrategy from "passport-github2";
+import LinkedInStrategy from 'passport-linkedin-oauth2';
 
 import dotenv from "dotenv";
 dotenv.config();
@@ -10,7 +11,8 @@ passport.use(new GoogleStrategy({
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     callbackURL: "/api/auth/google/callback",
     scope: ['user:email'], // ✅ Request access to user email
-}, (accessToken, refreshToken, profile, done) => {
+}, 
+(accessToken, refreshToken, profile, done) => {
     done(null, {
         id: profile.id,
         email: profile.emails[0].value,
@@ -58,6 +60,29 @@ passport.use(new GitHubStrategy({
         provider: "github"
     });
 }));
+/** 
+passport.use(new LinkedInStrategy({
+  clientID: process.env.LINKEDIN_CLIENT_ID,
+  clientSecret: process.env.LINKEDIN_CLIENT_SECRET,
+  callbackURL: "/api/auth/linkedin/callback",
+  scope: ['r_emailaddress', 'r_liteprofile'],
+  state: true // recommended for security
+}, async (accessToken, refreshToken, profile, done) => {
+  try {
+    // Extract user info
+    const email = profile.emails?.[0]?.value;
+    const name = profile.displayName;
+    const provider = 'linkedin';
+
+    const userData = { email, name, provider };
+
+    // Continue to your controller
+    done(null, userData);
+  } catch (error) {
+    done(error, null);
+  }
+}));*/
+
 
 
 export default passport;
