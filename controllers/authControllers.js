@@ -428,54 +428,49 @@ export async function verifyVarificationCode(req, res) {
 
 
 
-export async function changePassword(req, res) {
-    const { userId } = req.user;
-    const { oldPassword, newPassword } = req.body;
+export const changePassword = async (req, res) => {
+  const { userId } = req.user;
+  const { oldPassword, newPassword } = req.body;
 
-    try {
-        const { error } = changePasswordSchema.validate({ oldPassword, newPassword });
-        if (error) {
-            return res.status(400).json({
-                field: error.details[0].context.key,
-                success: false,
-                message: error.details[0].message
-            });
-        }
+  // ✅ 1. Validate input
+  const { error } = changePasswordSchema.validate({ oldPassword, newPassword });
+  if (error) {
+    return res.status(400).json({
+      field: error.details[0].context.key,
+      success: false,
+      message: error.details[0].message,
+    });
+  }
 
-        const existingUser = await UserModel.findById(userId).select('+password');
-        if (!existingUser) {
-            return res.status(404).json({
-                field: 'user',
-                success: false,
-                message: "User doesn't exist"
-            });
-        }
+  // ✅ 2. Find user
+  const existingUser = await UserModel.findById(userId).select('+password');
+  if (!existingUser) {
+    return res.status(404).json({
+      field: 'user',
+      success: false,
+      message: "User doesn't exist",
+    });
+  }
 
-        const isMatch = await decryptHashedPassword(oldPassword, existingUser.password);
-        if (!isMatch) {
-            return res.status(401).json({
-                field: 'oldPassword',
-                success: false,
-                message: "Old password is incorrect"
-            });
-        }
+  // ✅ 3. Check old password
+  const isMatch = await decryptHashedPassword(oldPassword, existingUser.password);
+  if (!isMatch) {
+    return res.status(401).json({
+      field: 'oldPassword',
+      success: false,
+      message: "Old password is incorrect",
+    });
+  }
 
-        existingUser.password = await doHash(newPassword, 12);
-        await existingUser.save();
+  // ✅ 4. Update password
+  existingUser.password = await doHash(newPassword, 12);
+  await existingUser.save();
 
-        return res.status(200).json({
-            success: true,
-            message: "🔒 Password updated successfully"
-        });
-
-    } catch (error) {
-        console.error("Change Password Error:", error);
-        return res.status(500).json({
-            success: false,
-            message: "Internal server error"
-        });
-    }
-}
+  return res.status(200).json({
+    success: true,
+    message: "🔒 Password updated successfully",
+  });
+};
 
 
 

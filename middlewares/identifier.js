@@ -1,11 +1,11 @@
-/**
+
 import dotenv from "dotenv";
 import jwt from 'jsonwebtoken';
 dotenv.config();
 
 
- * for making sure that usrs cant access signout, send-Verification-Code
- * and onter rout that need users to be logged in
+// * for making sure that usrs cant access signout, send-Verification-Code
+// * and onter rout that need users to be logged in
 
 
 export function identifier(req, res, next) {
@@ -43,7 +43,7 @@ export function identifier(req, res, next) {
     }
 }
 
-
+/**
 import jwt from 'jsonwebtoken';
 import dotenv from "dotenv";
 dotenv.config();
@@ -76,7 +76,7 @@ export function identifier(req, res, next) {
         });
     }
 }
- */
+
 
 import jwt from 'jsonwebtoken';
 import dotenv from "dotenv";
@@ -105,3 +105,4 @@ export function identifier(req, res, next) {
         });
     }
 }
+ */

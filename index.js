@@ -4,6 +4,7 @@ import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import mongoose from 'mongoose';
 import authroutesRoutes, { data } from './routes/authRoutes.js'
+import postsRoutes from './routes/postsRoutes.js'
 
 import dotenv from 'dotenv';
 dotenv.config();
@@ -14,7 +15,7 @@ const PORT = 8000
 
 app.use(cors({
     origin: 'http://localhost:3000', // allow only this origin
-    //methods: ['POST', 'GET', 'PUT', 'DELETE'],
+   //methods: ['POST', 'GET', 'PUT', 'DELETE'],
     credentials: true // if you're using cookies/auth
 }));
 
@@ -31,8 +32,10 @@ mongoose.connect(process.env.MONGO_URI).then(() => {
     console.log(err);
 })
 
+
 //Routes
 app.use('/api/auth', authroutesRoutes)
+app.use('/api/auth', postsRoutes)
 
 // Global error handler middleware
 app.use((err, req, res, next) => {
@@ -50,8 +53,55 @@ app.get('/', data)
 
 app.listen(PORT, () => { //process.env.PORT
     console.log(`\nServer running on port: http://localhost:${PORT}\n`)
-    console.log("connecting to database...")
+    //console.log("connecting to database...")
 })
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /**
 

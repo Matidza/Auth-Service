@@ -81,10 +81,18 @@ const signInSchema = Joi.object({ email: emailSchema, password: passwordSchema }
 const acceptedCodeSchema = Joi.object({ email: emailSchema, providedCodeValue: providedCodeSchema})
 const changePasswordSchema = Joi.object({ newPassword: newPasswordSchema, oldPassword: oldPasswordSchema })
 const sendCodeSchema = Joi.object({ email: emailSchema});
+
 const acceptForgotPasswordSchema = Joi.object({ 
-  email: Joi.string().min(5).max(60).required().email({tlds: {allow: false},}),
-  providedCodeValue: Joi.number().required(),
-  newPassword: Joi.string().required().pattern(new RegExp('^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*()_+\\-=[\\]{};:\'",.<>/?]).{8,}$'))
+  email: Joi.string()
+    .min(5)
+    .max(60)
+    .required()
+    .email({tlds: {allow: false},}),
+  providedCodeValue: Joi.number()
+    .required(),
+  newPassword: Joi.string()
+    .required()
+    .pattern(new RegExp('^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*()_+\\-=[\\]{};:\'",.<>/?]).{8,}$'))
     .messages({
         'string.pattern.base': `Password must be at least 8 characters long, include uppercase and lowercase letters, a number, and a special character.`,
         'string.empty': `Password cannot be empty.`,
@@ -92,4 +100,12 @@ const acceptForgotPasswordSchema = Joi.object({
     })
 })
 
-export { signUpSchema, signInSchema, acceptedCodeSchema, changePasswordSchema, acceptForgotPasswordSchema, sendCodeSchema };
+
+const titleShema = Joi.string().min(3).max(60).required();
+const descriptionShema = Joi.string().min(5).max(600).required();
+const userIdShema = Joi.string().required();
+
+const createPostSchema = Joi.object({ title: titleShema, description: descriptionShema, userId: userIdShema})
+
+
+export { createPostSchema, signUpSchema, signInSchema, acceptedCodeSchema, changePasswordSchema, acceptForgotPasswordSchema, sendCodeSchema };
