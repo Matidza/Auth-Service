@@ -18,7 +18,8 @@ import {
   verifysendForgotPasswordCode,
   sendVarificationCode,
   verifyVarificationCode,
-  oauthCallbackHandler
+  oauthCallbackHandler,
+  oauthCallbackHandlerForSignUpMentor
 } from "../controllers/authControllers.js";
 
 const router = express.Router();
@@ -79,9 +80,23 @@ router.get('/google', passport.authenticate('google', {
 }));
 router.get('/google/callback', passport.authenticate('google', { session: false }), oauthCallbackHandler);
 
+// Google Auth Mentor
+router.get('/google-mentor', passport.authenticate('google', {
+  scope: ['profile', 'email'],
+  prompt: 'select_account'
+}));
+router.get('/google/callback', passport.authenticate('google', { session: false }), oauthCallbackHandlerForSignUpMentor);
+
+
+
 // GitHub OAuth
 router.get('/github', passport.authenticate('github', { scope: ['user:email'] }));
 router.get('/github/callback', passport.authenticate('github', { session: false }), oauthCallbackHandler);
+
+// GitHub OAuth
+router.get('/github-mentor', passport.authenticate('github', { scope: ['user:email'] }));
+router.get('/github/callback', passport.authenticate('github', { session: false }), oauthCallbackHandlerForSignUpMentor);
+
 
 // LinkedIn OAuth
 router.get('/linkedin', passport.authenticate('linkedin'));

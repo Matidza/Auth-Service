@@ -242,9 +242,9 @@ export const oauthCallbackHandler = async (req, res) => {
     }
 };
 
-/**
- * export const oauthCallbackHandlerForSignUpMentor = async (req, res) => {
-    const { id, email, name, provider, user_types="mentor" } = req.user;
+
+ export const oauthCallbackHandlerForSignUpMentor = async (req, res) => {
+    const { id, email, name, provider, user_type="mentor" } = req.user;
     try {
         if (!email) {
             return res.status(400).json({
@@ -268,7 +268,8 @@ export const oauthCallbackHandler = async (req, res) => {
         const accessToken = jwt.sign(
             {
                 userId: existingUser._id,
-                email: existingUser.email
+                email: existingUser.email,
+                user_type: existingUser.user_type
             },
             process.env.SECRET_ACCESS_TOKEN,
             { expiresIn: "6h" } // 👈 increase for dev
@@ -290,7 +291,7 @@ export const oauthCallbackHandler = async (req, res) => {
         });
     }
 };
- */
+
 
 /**
  * Sign in a user
