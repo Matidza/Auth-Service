@@ -214,6 +214,7 @@ export const oauthCallbackHandler = async (req, res) => {
                 oauthId: id,
                 password: crypto.randomBytes(16).toString("hex")
             });
+            //console.log(existingUser)
         }
 
         const accessToken = jwt.sign(
@@ -231,8 +232,8 @@ export const oauthCallbackHandler = async (req, res) => {
                 sameSite: "strict",
                 maxAge: 6 * 60 * 60 * 1000, // match JWT (6 hours)
                 secure: process.env.NODE_ENV === "production"
-            }).redirect("http://localhost:3000/signin")
-            
+            }).redirect("http://localhost:3000/AUTH_MICROSERVICE/signin")
+        
 
     } catch (error) {
         console.log("OAuth error:", error.message);
@@ -253,17 +254,21 @@ export const oauthCallbackHandler = async (req, res) => {
             });
         }
 
-        let existingUser = await UserModel.findOne({ email });
+        let xistingUser = await UserModel.findOne({ email });
         if (!existingUser) {
             existingUser = await UserModel.create({
                 email,
-                user_type,
+                user_type: "mentor",
                 name,
                 provider,
                 oauthId: id,
                 password: crypto.randomBytes(16).toString("hex")
             });
+        } else if (existingUser.user_type !== "mentor") {
+            existingUser.user_type = "mentor";
+            await existingUser.save(); // 🛠️ promote user
         }
+        
 
         const accessToken = jwt.sign(
             {
@@ -281,7 +286,7 @@ export const oauthCallbackHandler = async (req, res) => {
                 sameSite: "strict",
                 maxAge: 6 * 60 * 60 * 1000, // match JWT (6 hours)
                 secure: process.env.NODE_ENV === "production"
-            }).redirect("http://localhost:3000/signin")
+            })//.redirect("http://localhost:3000/signin")
             
 
     } catch (error) {
@@ -396,7 +401,7 @@ export async function signOut(req, res) {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict"
-    });
+    })//.redirect("http://localhost:3000/AUTH_MICROSERVICE/signup");
   
     return res.status(200).json({
       success: true,
