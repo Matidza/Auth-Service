@@ -187,106 +187,107 @@ export function isUserloggedIn (req, res) {
 
 // OAuth callback handler (Google/GitHub)
 export const oauthCallbackHandler = async (req, res) => {
-    const { id, email, name, provider } = req.user;
-    try {
-        if (!email) {
-            return res.status(400).json({
-                success: false,
-                message: "Email not found in OAuth profile"
-            });
-        }
+  const { id, email, name, provider, user_type = "mentee" } = req.user;
 
-        let existingUser = await UserModel.findOne({ email });
-        if (!existingUser) {
-            existingUser = await UserModel.create({
-                email,
-                name,
-                provider,
-                oauthId: id,
-                password: crypto.randomBytes(16).toString("hex")
-            });
-            //console.log(existingUser)
-        }
-
-        const accessToken = jwt.sign(
-            {
-                userId: existingUser._id,
-                email: existingUser.email
-            },
-            process.env.SECRET_ACCESS_TOKEN,
-            { expiresIn: "6h" } // 👈 increase for dev
-        );
-
-        res
-            .cookie("accessToken", accessToken, {
-                httpOnly: true,
-                sameSite: "strict",
-                maxAge: 6 * 60 * 60 * 1000, // match JWT (6 hours)
-                secure: process.env.NODE_ENV === "production"
-            }).redirect("http://localhost:3000/AUTH_MICROSERVICE/signin")
-        
-
-    } catch (error) {
-        console.log("OAuth error:", error.message);
-        res.status(500).json({
-            message: "OAuth Login failed."
-        });
+  try {
+    if (!email) {
+      return res.status(400).json({ success: false, message: "Email not found in OAuth profile" });
     }
+
+    let existingUser = await UserModel.findOne({ email });
+
+    if (!existingUser) {
+      existingUser = await UserModel.create({
+        email,
+        name,
+        provider,
+        oauthId: id,
+        user_type, // ✅ now respected
+        password: crypto.randomBytes(16).toString("hex"),
+      });
+    } else if (existingUser.user_type !== user_type) {
+      existingUser.user_type = user_type;
+      await existingUser.save();
+    }
+
+    const accessToken = jwt.sign(
+      {
+        userId: existingUser._id,
+        email: existingUser.email,
+        user_type: existingUser.user_type
+      },
+      process.env.SECRET_ACCESS_TOKEN,
+      { expiresIn: "6h" }
+    );
+
+    res.cookie("accessToken", accessToken, {
+      httpOnly: true,
+      sameSite: "strict",
+      maxAge: 6 * 60 * 60 * 1000,
+      secure: process.env.NODE_ENV === "production"
+    }).redirect("http://localhost:3000/AUTH_MICROSERVICE/signin");
+
+  } catch (error) {
+    console.log("OAuth error:", error.message);
+    res.status(500).json({ message: "OAuth Login failed." });
+  }
 };
 
 
- export const oauthCallbackHandlerForSignUpMentor = async (req, res) => {
-    const { id, email, name, provider, user_type= "mentor" } = req.user;
-    try {
-        if (!email) {
-            return res.status(400).json({
-                success: false,
-                message: "Email not found in OAuth profile"
-            });
-        }
+export const oauthCallbackHandlerForSignUpMentor = async (req, res) => {
+  const { id, email, name, provider, user_type = "mentor" } = req.user;
 
-        let existingUser = await UserModel.findOne({ email });
-        if (!existingUser) {
-            existingUser = await UserModel.create({
-                email,
-                user_type,
-                name,
-                provider,
-                oauthId: id,
-                password: crypto.randomBytes(16).toString("hex")
-            });
-        } else if (existingUser.user_type !== "mentor") {
-            existingUser.user_type = "mentor";
-            await existingUser.save(); // 🛠️ promote user
-        }
-        
-
-        const accessToken = jwt.sign(
-            {
-                userId: existingUser._id,
-                email: existingUser.email,
-                user_type: existingUser.user_type
-            },
-            process.env.SECRET_ACCESS_TOKEN,
-            { expiresIn: "6h" } // 👈 increase for dev
-        );
-
-        res
-            .cookie("accessToken", accessToken, {
-                httpOnly: true,
-                sameSite: "strict",
-                maxAge: 6 * 60 * 60 * 1000, // match JWT (6 hours)
-                secure: process.env.NODE_ENV === "production"
-            })//.redirect("http://localhost:3000/signin")
-            
-
-    } catch (error) {
-        console.log("OAuth error:", error.message);
-        res.status(500).json({
-            message: "OAuth Login failed."
-        });
+  try {
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: "Email not found in OAuth profile"
+      });
     }
+
+    let existingUser = await UserModel.findOne({ email });
+
+    if (!existingUser) {
+      existingUser = await UserModel.create({
+        email,
+        name,
+        provider,
+        oauthId: id,
+        user_type, // 👈 mentee or mentor
+        password: crypto.randomBytes(16).toString("hex"),
+      });
+    } else if (existingUser.user_type !== user_type) {
+      existingUser.user_type = user_type; // 👈 Promote or switch type
+      await existingUser.save();
+    }
+
+    const accessToken = jwt.sign(
+      {
+        userId: existingUser._id,
+        email: existingUser.email,
+        user_type: existingUser.user_type
+      },
+      process.env.SECRET_ACCESS_TOKEN,
+      { expiresIn: "6h" }
+    );
+
+    res
+      .cookie("accessToken", accessToken, {
+        httpOnly: true,
+        sameSite: "strict",
+        maxAge: 6 * 60 * 60 * 1000,
+        secure: process.env.NODE_ENV === "production"
+      })
+      .redirect("http://localhost:3000/AUTH_MICROSERVICE/signin");
+
+  } catch (error) {
+    console.log("OAuth error:", error.message);
+    res.status(500).json({
+      message: "OAuth Login failed."
+    });
+  }
 };
+
 
 
 /**

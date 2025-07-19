@@ -74,27 +74,38 @@ router.get('/check-auth', identifier, catchAsync(isUserloggedIn));
 // ===========================
 
 // Google OAuth
+// For mentee signup
 router.get('/google', passport.authenticate('google', {
   scope: ['profile', 'email'],
-  prompt: 'select_account'
+  prompt: 'select_account',
+  state: 'mentee'
 }));
 router.get('/google/callback', passport.authenticate('google', { session: false }), oauthCallbackHandler);
 
 // Google Auth Mentor
+// For mentor signup
 router.get('/google-mentor', passport.authenticate('google', {
   scope: ['profile', 'email'],
-  prompt: 'select_account'
+  prompt: 'select_account',
+  state: 'mentor'
 }));
 router.get('/google/callback', passport.authenticate('google', { session: false }), oauthCallbackHandlerForSignUpMentor);
 
 
 
 // GitHub OAuth
-router.get('/github', passport.authenticate('github', { scope: ['user:email'] }));
+router.get('/github', passport.authenticate('github', { 
+  scope: ['user:email'],
+  state: 'mentee'
+}));
 router.get('/github/callback', passport.authenticate('github', { session: false }), oauthCallbackHandler);
 
 // GitHub OAuth
-router.get('/github-mentor', passport.authenticate('github', { scope: ['user:email'] }));
+router.get('/github-mentor', passport.authenticate('github', {
+  scope: ['user:email'],
+  state: 'mentor'  // ✅ mark it as mentor signup
+}));
+
 router.get('/github/callback', passport.authenticate('github', { session: false }), oauthCallbackHandlerForSignUpMentor);
 
 

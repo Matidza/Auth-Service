@@ -13,20 +13,22 @@ passport.use(
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
       callbackURL: "/api/auth/google/callback",
-      scope: ["user:email"],
+      passReqToCallback: true, // ✅ add this
     },
-    (accessToken, refreshToken, profile, done) => {
+    (req, accessToken, refreshToken, profile, done) => {
+      const user_type = req.query.state || "mentee"; // ✅ read from state
       done(null, {
         id: profile.id,
         email: profile.emails[0].value,
         name: profile.displayName,
         provider: "google",
+        user_type
       });
     }
   )
 );
 
-// ✅ GitHub Strategy
+
 passport.use(
   new GitHubStrategy(
     {
@@ -34,14 +36,14 @@ passport.use(
       clientSecret: process.env.GITHUB_CLIENT_SECRET,
       callbackURL: "/api/auth/github/callback",
       scope: ["user:email"],
+      passReqToCallback: true, // ✅ important
     },
-    async (accessToken, refreshToken, profile, done) => {
+    async (req, accessToken, refreshToken, profile, done) => {
       let email = null;
 
       if (profile.emails && profile.emails.length > 0) {
         email = profile.emails[0].value;
       } else {
-        // 🔁 Fetch primary email if not included in profile
         try {
           const response = await fetch("https://api.github.com/user/emails", {
             headers: {
@@ -65,15 +67,19 @@ passport.use(
         return done(new Error("No email found in GitHub profile"), null);
       }
 
+      const user_type = req.query.state || "mentee"; // ✅ grab user_type from state
+
       done(null, {
         id: profile.id,
         email,
         name: profile.username,
         provider: "github",
+        user_type,
       });
     }
   )
 );
+
 
 /**
 // 🔒 LinkedIn Strategy (optional - currently commented out)
