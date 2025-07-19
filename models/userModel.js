@@ -23,7 +23,7 @@ const userSchema = new mongoose.Schema(
     user_type: {
       type: String,
       enum: ['mentee', 'mentor'],
-      default: 'mentee', // ✅ Default role
+      //default: 'mentee', // ✅ Default role
     },
 
     provider: {

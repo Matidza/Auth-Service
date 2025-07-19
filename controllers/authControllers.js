@@ -16,8 +16,7 @@ dotenv.config();
  * hashing the password, and storing the user in the database.
  */
 export const signUp = async (req, res) => {
-    const { email, password,user_type } = req.body;
-
+    const { email, password, user_type= "mentee" } = req.body;
     try {
         // Validate input
         const { error } = signUpSchema.validate({ email, password });
@@ -38,13 +37,10 @@ export const signUp = async (req, res) => {
                 message: "Email already exists, try a different one."
             });
         }
-
         // Hash the password
         const hashedPassword = await doHash(password, 12);
-
         // Create new user
-       const newUser = new UserModel({ user_type, email, password: hashedPassword, provider: 'local' });
- 
+        const newUser = new UserModel({ user_type, email, password: hashedPassword, provider: 'local' });
         const result = await newUser.save();
 
         result.password = undefined;
@@ -97,7 +93,6 @@ export const signUp = async (req, res) => {
 };
 export default signUp;
 
-
 export const signUpAsMentor = async (req, res) => {
     const { email, password, user_type= "mentor" } = req.body;
 
@@ -124,10 +119,8 @@ export const signUpAsMentor = async (req, res) => {
 
         // Hash the password
         const hashedPassword = await doHash(password, 12);
-
         // Create new user
-       const newUser = new UserModel({ user_type, email, password: hashedPassword, provider: 'local' });
- 
+        const newUser = new UserModel({ user_type, email, password: hashedPassword, provider: 'local' });
         const result = await newUser.save();
 
         result.password = undefined;
@@ -180,9 +173,6 @@ export const signUpAsMentor = async (req, res) => {
 };
 
 
-
-
-
 export function isUserloggedIn (req, res) {
   res.status(200).json({
     success: true,
@@ -193,6 +183,7 @@ export function isUserloggedIn (req, res) {
     }
   })
 }
+
 
 // OAuth callback handler (Google/GitHub)
 export const oauthCallbackHandler = async (req, res) => {
@@ -245,7 +236,7 @@ export const oauthCallbackHandler = async (req, res) => {
 
 
  export const oauthCallbackHandlerForSignUpMentor = async (req, res) => {
-    const { id, email, name, provider, user_type="mentor" } = req.user;
+    const { id, email, name, provider, user_type= "mentor" } = req.user;
     try {
         if (!email) {
             return res.status(400).json({
@@ -254,11 +245,11 @@ export const oauthCallbackHandler = async (req, res) => {
             });
         }
 
-        let xistingUser = await UserModel.findOne({ email });
+        let existingUser = await UserModel.findOne({ email });
         if (!existingUser) {
             existingUser = await UserModel.create({
                 email,
-                user_type: "mentor",
+                user_type,
                 name,
                 provider,
                 oauthId: id,
@@ -348,48 +339,45 @@ export async function signIn(req, res) {
             });
         }
         const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
-        
         // Step 5: Generate access token
         const accessToken = jwt.sign(
             {
                 userId: existingUser._id,
                 email: existingUser.email,
                 verified: existingUser.verified,
-                //resetCode: resetCode
+                resetCode: resetCode,
+                user_type: existingUser.user_type
             },
             process.env.SECRET_ACCESS_TOKEN,
             { expiresIn: "30min" }
         );
 
         // Step 6: Set cookie & return response
-        res
-            .cookie("accessToken", accessToken, {
-                httpOnly: true,
-                sameSite: "strict",
-                maxAge: 3 * 60 * 60 * 1000, // 3 hours
-                secure: process.env.NODE_ENV === "production" // make sure HTTPS is used in prod
-            })
-            .json({
-                success: true,
-                field: null,
-                message: "Logged in successfully",
-                userId: existingUser._id,
-                accessToken: accessToken
-            });
-        console.log(`\nUser: ${existingUser._id}\nAccessToken: ${accessToken}`);
-
+        res.cookie("accessToken", accessToken, {
+            httpOnly: true,
+            sameSite: "strict",
+            maxAge: 3 * 60 * 60 * 1000, // 3 hours
+            secure: process.env.NODE_ENV === "production" // make sure HTTPS is used in prod
+        }).json({
+            success: true,
+            field: null,
+            message: "Logged in successfully",
+            userId: existingUser._id,
+            accessToken: accessToken,
+            user_type: existingUser.user_type
+        });
+        console.log(`\nUser: ${existingUser._id}\nAccessToken: ${accessToken}\n ${existingUser.user_type}`);
+            
     } catch (error) {
         console.error("SignIn Error:", error);
         res.status(500).json({
             success: false,
             field: null,
-            message: "Internal server error"
+            message: `Internal server error: ${error}`
         });
     }
 }
 
-
-  
 
 /**
  * Sign out a user 
@@ -410,10 +398,8 @@ export async function signOut(req, res) {
   }
   
 
-
 export async function sendVarificationCode(req, res) {
     const { email } = req.body;
-
     try {
         const { error } = sendCodeSchema.validate({ email });
         if (error) {
@@ -423,9 +409,7 @@ export async function sendVarificationCode(req, res) {
                 message: error.details[0].message
             });
         }
-
         const existingUser = await UserModel.findOne({ email });
-
         if (!existingUser) {
             return res.status(404).json({
                 field: "email",
@@ -433,7 +417,6 @@ export async function sendVarificationCode(req, res) {
                 message: "User doesn't exist"
             });
         }
-
         if (existingUser.verified) {
             return res.status(400).json({
                 field: "email",
@@ -441,10 +424,8 @@ export async function sendVarificationCode(req, res) {
                 message: "User is already verified"
             });
         }
-
         const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
         console.log(resetCode);
-
         const sendingEmail = await sendEmail.sendMail({
             from: process.env.NODE_CODE_SENDING_EMAIL_ADDRESS,
             to: existingUser.email,
@@ -458,7 +439,6 @@ export async function sendVarificationCode(req, res) {
             existingUser.verificationCodeValidation = Date.now();
 
             await existingUser.save();
-
             return res.status(200).json({
                 success: true,
                 field: null,
@@ -563,8 +543,6 @@ export async function verifyVarificationCode(req, res) {
 }
 
 
-
-
 export const changePassword = async (req, res) => {
   const { userId } = req.user;
   const { oldPassword, newPassword } = req.body;
@@ -610,11 +588,8 @@ export const changePassword = async (req, res) => {
 };
 
 
-
-
 export async function sendForgotPasswordCode(req, res) {
     const { email } = req.body;
-
     try {
         const { error } = sendCodeSchema.validate({ email });
         if (error) {
@@ -624,7 +599,6 @@ export async function sendForgotPasswordCode(req, res) {
                 message: error.details[0].message
             });
         }
-
         const existingUser = await UserModel.findOne({ email });
 
         if (!existingUser) {
@@ -637,7 +611,6 @@ export async function sendForgotPasswordCode(req, res) {
 
         const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
         console.log("Reset Code:", resetCode);
-
         const sendingEmail = await sendEmail.sendMail({
             from: process.env.NODE_CODE_SENDING_EMAIL_ADDRESS,
             to: existingUser.email,
@@ -666,8 +639,8 @@ export async function sendForgotPasswordCode(req, res) {
             const hashedValue = hmacProcess(resetCode, process.env.HMAC_VERIFICATION_CODE_SECRET);
             existingUser.forgotPasswordCode = hashedValue;
             existingUser.forgotPasswordCodeValidation = Date.now();
+            
             await existingUser.save();
-
             return res.status(200).json({
                 success: true,
                 field: null,
