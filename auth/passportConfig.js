@@ -81,8 +81,6 @@ passport.use(
 );
 
 
-/**
-// 🔒 LinkedIn Strategy (optional - currently commented out)
 passport.use(
   new LinkedInStrategy(
     {
@@ -90,15 +88,21 @@ passport.use(
       clientSecret: process.env.LINKEDIN_CLIENT_SECRET,
       callbackURL: "/api/auth/linkedin/callback",
       scope: ["r_emailaddress", "r_liteprofile"],
-      state: true, // recommended for CSRF protection
+      state: true, // CSRF protection & allows custom state
+      passReqToCallback: true, // ✅ needed to read req.query.state
     },
-    async (accessToken, refreshToken, profile, done) => {
+    async (req, accessToken, refreshToken, profile, done) => {
       try {
         const email = profile.emails?.[0]?.value;
         const name = profile.displayName;
         const provider = "linkedin";
+        const user_type = req.query.state || "mentee"; // ✅ use state or default to mentee
 
-        const userData = { email, name, provider };
+        if (!email) {
+          return done(new Error("No email found in LinkedIn profile"), null);
+        }
+
+        const userData = { email, name, provider, user_type };
         done(null, userData);
       } catch (error) {
         done(error, null);
@@ -106,6 +110,6 @@ passport.use(
     }
   )
 );
-*/
+
 
 export default passport;

@@ -110,7 +110,18 @@ router.get('/github/callback', passport.authenticate('github', { session: false 
 
 
 // LinkedIn OAuth
-router.get('/linkedin', passport.authenticate('linkedin'));
+// 👤 Default signup (mentee)
+router.get('/linkedin', passport.authenticate('linkedin', {
+  state: 'mentee' // 🔐 passed to strategy
+}));
 router.get('/linkedin/callback', passport.authenticate('linkedin', { session: false }), oauthCallbackHandler);
+
+
+// 👨‍🏫 Mentor signup
+router.get('/linkedin-mentor', passport.authenticate('linkedin', {
+  state: 'mentor' // 🔐 passed to strategy
+}));
+router.get('/linkedin/callback', passport.authenticate('linkedin', { session: false }), oauthCallbackHandlerForSignUpMentor);
+
 
 export default router;
