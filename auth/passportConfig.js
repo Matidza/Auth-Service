@@ -80,7 +80,7 @@ passport.use(
   )
 );
 
-
+/** 
 passport.use(
   new LinkedInStrategy(
     {
@@ -109,7 +109,7 @@ passport.use(
       }
     }
   )
-);
+);*/
 
 
 export default passport;

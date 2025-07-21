@@ -7,20 +7,12 @@ import '../auth/passportConfig.js';
 import catchAsync from '../utilities/catchAsync.js';
 import { identifier } from "../middlewares/identifier.js";
 import UserModel from "../models/userModel.js";
-import {
-  signUp,
-  signUpAsMentor,
-  signIn,
-  signOut,
-  changePassword,
-  isUserloggedIn,
-  sendForgotPasswordCode,
-  verifysendForgotPasswordCode,
-  sendVarificationCode,
-  verifyVarificationCode,
-  oauthCallbackHandler,
-  oauthCallbackHandlerForSignUpMentor
-} from "../controllers/authControllers.js";
+import { 
+  signUp, signUpAsMentor,
+  signIn, signOut,
+  isUserloggedIn, oauthCallbackHandler,
+  oauthCallbackHandlerForSignUpMentor } from "../controllers/authControllers.js";
+import { changePassword, sendForgotPasswordCode, sendVarificationCode, verifysendForgotPasswordCode, verifyVarificationCode } from "../controllers/passwordControllers.js";
 
 const router = express.Router();
 
@@ -33,28 +25,21 @@ export async function data(req, res) {
   res.send(allData);
 }
 
-// ===========================
-// 🔐 AUTHENTICATION ROUTES
-// ===========================
 
-// Sign Up & Sign In
+// 🔐 AUTHENTICATION ROUTES
 router.post('/signup', catchAsync(signUp));
 router.post('/signup-as-mentor', catchAsync(signUpAsMentor));
 router.post('/signin', catchAsync(signIn));
 router.post('/signout', identifier, catchAsync(signOut));
 
-// ===========================
-// ✅ EMAIL VERIFICATION
-// ===========================
 
+// ✅ EMAIL VERIFICATION
 // Send and verify verification code (for new users)
 router.patch('/send-verification-code', catchAsync(sendVarificationCode));
 router.patch('/verify-verification-code', catchAsync(verifyVarificationCode));
 
-// ===========================
-// 🔑 PASSWORD MANAGEMENT
-// ===========================
 
+// 🔑 PASSWORD MANAGEMENT
 // Change password (requires login)
 router.patch('/change-password', identifier, catchAsync(changePassword));
 
@@ -62,17 +47,13 @@ router.patch('/change-password', identifier, catchAsync(changePassword));
 router.patch('/forgot-password', catchAsync(sendForgotPasswordCode));
 router.patch('/reset-password', catchAsync(verifysendForgotPasswordCode));
 
-// ===========================
-// 🧾 SESSION VALIDATION
-// ===========================
 
+// 🧾 SESSION VALIDATION
 // Check if user is currently authenticated
 router.get('/check-auth', identifier, catchAsync(isUserloggedIn));
 
-// ===========================
-// 🌐 OAUTH SOCIAL LOGIN
-// ===========================
 
+// 🌐 OAUTH SOCIAL LOGIN
 // Google OAuth
 // For mentee signup
 router.get('/google', passport.authenticate('google', {
@@ -94,6 +75,7 @@ router.get('/google/callback', passport.authenticate('google', { session: false 
 
 
 // GitHub OAuth
+// For mentee signup
 router.get('/github', passport.authenticate('github', { 
   scope: ['user:email'],
   state: 'mentee'
@@ -101,6 +83,7 @@ router.get('/github', passport.authenticate('github', {
 router.get('/github/callback', passport.authenticate('github', { session: false }), oauthCallbackHandler);
 
 // GitHub OAuth
+// For mentor signup
 router.get('/github-mentor', passport.authenticate('github', {
   scope: ['user:email'],
   state: 'mentor'  // ✅ mark it as mentor signup
