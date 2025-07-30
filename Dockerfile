@@ -1,4 +1,4 @@
-FROM node
+FROM node:20-alpine
 
 #create a user with permissions to run app
 # -S -> create a system user
@@ -27,20 +27,21 @@ USER root
 # change the ownership of the /app dir to the app user
 # chown -R <user>:<group> <dir>
 # chown command changes the user and/or group ownership of the given file
-RUN chown -R app:app
+RUN chown -R app:app .
 
-# change the user back to the app user
+# change the user back to the app user 
 USER app
 
 # install dependencies
+RUN npm install express@latest
 RUN npm install
 
 # copy the reset of the files and folders
 COPY . .
 
 # Expose port to tell Docker that the container listens on the specified network port at runtime
-EXPOSE 5173
+EXPOSE 8000
 
 # command to run the app
-CMD npm run dev
+CMD npm start
 
