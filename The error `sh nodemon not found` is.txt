@@ -1,0 +1,61 @@
+The error `sh: nodemon: not found` is because you're installing `nodemon` **locally**, but you're trying to run it as if it's a **global** command in your Docker container. In Alpine (or any minimal Docker image), the local `node_modules/.bin` directory is not in the PATH by default.
+
+### Solution:
+
+You have two main options:
+
+---
+
+## **Option 1: Use `npx nodemon` in `package.json` scripts**
+
+This is the **simplest and recommended** way.
+
+### Change your `package.json` scripts to:
+
+```json
+"scripts": {
+  "start": "npx nodemon index.js",
+  "dev": "npx nodemon --trace-warnings index.js"
+}
+```
+
+No Dockerfile changes needed. This uses the locally installed `nodemon` inside `node_modules/.bin`.
+
+---
+
+## **Option 2: Install `nodemon` Globally in Dockerfile (less recommended)**
+
+Add this line to your Dockerfile **before** switching back to `USER app`:
+
+```dockerfile
+RUN npm install -g nodemon
+```
+
+Update section in Dockerfile:
+
+```dockerfile
+USER root
+RUN chown -R app:app /app
+RUN npm install -g nodemon
+USER app
+```
+
+Then your `package.json` scripts remain as:
+
+```json
+"scripts": {
+  "start": "nodemon index.js",
+  "dev": "nodemon --trace-warnings index.js"
+}
+```
+
+---
+
+## 🔑 **Best Practice Recommendation:**
+
+* Go with **Option 1 (npx nodemon)** — cleaner, no need for global installs.
+* Global installs in Docker are often unnecessary bloat unless you're building dev containers with CLI tooling.
+
+---
+
+Would you like me to show you a **cleaner optimized Dockerfile** for this setup as well?

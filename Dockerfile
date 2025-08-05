@@ -27,13 +27,15 @@ USER root
 # change the ownership of the /app dir to the app user
 # chown -R <user>:<group> <dir>
 # chown command changes the user and/or group ownership of the given file
-RUN chown -R app:app .
+RUN chown -R app:app /app
 
 # change the user back to the app user 
 USER app
 
 # install dependencies
+# if there are global dependencies, RUN them here or move them to dependencies in package.json
 RUN npm install express@latest
+RUN npm install nodemon
 RUN npm install
 
 # copy the reset of the files and folders
