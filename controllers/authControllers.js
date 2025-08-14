@@ -34,7 +34,7 @@ export const signUp = async (req, res) => {
         // Hash the password
         const hashedPassword = await doHash(password, 12);
         // Create new user
-        const newUser = new UserModel({ user_type, email, password: hashedPassword, provider: 'local' });
+        const newUser = new UserModel({ email, password: hashedPassword, provider: 'local' });
         const result = await newUser.save();
 
         result.password = undefined;
@@ -48,7 +48,7 @@ export const signUp = async (req, res) => {
             { expiresIn: "0.5h" }
         );
         console.log(newUser);
-        
+       
         // Step 6: Set cookie & return response
         return res.cookie("accessToken", accessToken, {
                 httpOnly: true,
@@ -75,7 +75,7 @@ export const signUp = async (req, res) => {
                 result
             }) */
            ;
-           
+          
     } catch (error) {
         console.error("SignUp Error:", error);
         return res.status(500).json({
@@ -353,7 +353,8 @@ export async function signIn(req, res) {
             message: "Logged in successfully",
             userId: existingUser._id,
             accessToken: accessToken,
-            user_type: existingUser.user_type
+            user_type: existingUser.user_type,
+            //email: existingUser.email
         });
         console.log(`\nUser: ${existingUser._id}\nAccessToken: ${accessToken}\n ${existingUser.user_type}`);
             
