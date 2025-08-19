@@ -376,22 +376,37 @@ export async function refreshTokenHandler(req, res) {
   try {
     const token = req.cookies.refreshToken;
     if (!token) {
-      return res.status(401).json({ success: false, message: "No refresh token" });
+      return res.status(401).json({
+        success: false,
+        message: "No refresh token provided",
+      });
     }
 
+    // Verify refresh token
     const payload = jwt.verify(token, process.env.SECRET_REFRESH_TOKEN);
 
+    // Fetch user
     const user = await UserModel.findById(payload.userId);
     if (!user) {
-      return res.status(401).json({ success: false, message: "User not found" });
+      return res.status(401).json({
+        success: false,
+        message: "User not found",
+      });
     }
 
+    // Create new access token
     const newAccessToken = jwt.sign(
-      { userId: user._id, email: user.email, user_type: user.user_type },
+      {
+        userId: user._id,
+        email: user.email,
+        user_type: user.user_type,
+        verified: user.verified,
+      },
       process.env.SECRET_ACCESS_TOKEN,
       { expiresIn: "30m" }
     );
 
+    // Set new cookie
     res.cookie("accessToken", newAccessToken, {
       httpOnly: true,
       sameSite: "strict",
@@ -399,13 +414,18 @@ export async function refreshTokenHandler(req, res) {
       maxAge: 30 * 60 * 1000, // 30 minutes
     });
 
-    res.json({ success: true, message: "Access token refreshed" });
+    return res.json({
+      success: true,
+      message: "Access token refreshed",
+    });
   } catch (error) {
-    console.error("Refresh Token Error:", error);
-    return res.status(401).json({ success: false, message: "Invalid refresh token" });
+    console.error("Refresh Token Error:", error.message);
+    return res.status(401).json({
+      success: false,
+      message: "Invalid or expired refresh token",
+    });
   }
 }
-
 
 export async function signOut(req, res) {
     res.clearCookie("accessToken", {
