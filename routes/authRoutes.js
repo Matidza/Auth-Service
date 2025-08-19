@@ -18,7 +18,7 @@ import {
   sendVarificationCode, verifysendForgotPasswordCode, 
   verifyVarificationCode 
 } from "../controllers/passwordControllers.js";
-import { authMiddleware } from "../middlewares/isLoggedin.js";
+
 
 const router = express.Router();
 
@@ -37,7 +37,7 @@ router.post('/signup', catchAsync(signUp));
 router.post('/signup-as-mentor', catchAsync(signUpAsMentor));
 router.post('/signin', catchAsync(signIn));
 router.post('/signout', identifier, catchAsync(signOut));
-router.post('/refresh, refreshTokenHandler);
+router.post('/refresh', refreshTokenHandler);
 
 // ✅ EMAIL VERIFICATION
 // Send and verify verification code (for new users)
