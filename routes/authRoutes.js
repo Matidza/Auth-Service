@@ -13,6 +13,7 @@ import {
   isUserloggedIn, oauthCallbackHandler,
   oauthCallbackHandlerForSignUpMentor } from "../controllers/authControllers.js";
 import { changePassword, sendForgotPasswordCode, sendVarificationCode, verifysendForgotPasswordCode, verifyVarificationCode } from "../controllers/passwordControllers.js";
+import { authMiddleware } from "../middlewares/isLoggedin.js";
 
 const router = express.Router();
 

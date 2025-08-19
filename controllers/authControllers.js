@@ -308,17 +308,7 @@ export async function signIn(req, res) {
             });
         }
 
-        // Step 3: Optional verification check
-        /** 
-        if (!existingUser.verified) {
-            return res.status(403).json({
-                success: false,
-                field: 'email',
-                message: "Your account is not verified. Please check your email."
-            });
-        }*/
-
-        // Step 4: Check password
+        // Step 3: Check password
         const isPasswordValid = await decryptHashedPassword(password, existingUser.password);
         if (!isPasswordValid) {
             return res.status(401).json({
@@ -327,37 +317,41 @@ export async function signIn(req, res) {
                 message: "Invalid password"
             });
         }
+
+        // Optional: generate reset code if needed
         const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
-        // Step 5: Generate access token
+
+        // Step 4: Generate access token with user info
         const accessToken = jwt.sign(
             {
                 userId: existingUser._id,
                 email: existingUser.email,
+                user_type: existingUser.user_type,
                 verified: existingUser.verified,
-                resetCode: resetCode,
-                user_type: existingUser.user_type
+                resetCode
             },
             process.env.SECRET_ACCESS_TOKEN,
-            { expiresIn: "30min" }
+            { expiresIn: "30m" } // short-lived access token
         );
 
-        // Step 6: Set cookie & return response
+        // Step 5: Set cookie including all info inside the JWT
         res.cookie("accessToken", accessToken, {
             httpOnly: true,
             sameSite: "strict",
             maxAge: 3 * 60 * 60 * 1000, // 3 hours
-            secure: process.env.NODE_ENV === "production" // make sure HTTPS is used in prod
+            secure: process.env.NODE_ENV === "production"
         }).json({
             success: true,
             field: null,
             message: "Logged in successfully",
+            // optional: also send the info outside cookie if needed
             userId: existingUser._id,
-            accessToken: accessToken,
             user_type: existingUser.user_type,
-            //email: existingUser.email
+            email: existingUser.email,
         });
-        console.log(`\nUser: ${existingUser._id}\nAccessToken: ${accessToken}\n ${existingUser.user_type}`);
-            
+
+        console.log(`\nUser: ${existingUser._id}\nAccessToken: ${accessToken}\n${existingUser.user_type}`);
+
     } catch (error) {
         console.error("SignIn Error:", error);
         res.status(500).json({
@@ -367,6 +361,7 @@ export async function signIn(req, res) {
         });
     }
 }
+
 
 
 export async function signOut(req, res) {
