@@ -83,25 +83,24 @@ import dotenv from "dotenv";
 dotenv.config();
 
 export function identifier(req, res, next) {
-    // ✅ Get token from cookie, not header
-    const token = req.cookies.accessToken;
+  const token = req.cookies.accessToken;
 
-    if (!token) {
-        return res.status(403).json({
-            success: false,
-            message: "Unauthorized: No token provided"
-        });
-    }
+  if (!token) {
+    return res.status(403).json({
+      success: false,
+      message: "Unauthorized: No token provided",
+    });
+  }
 
-    try {
-        const jwtVerified = jwt.verify(token, process.env.SECRET_ACCESS_TOKEN);
-        req.user = jwtVerified;
-        next();
-    } catch (err) {
-        console.error("JWT Error:", err.message);
-        return res.status(401).json({
-            success: false,
-            message: "Invalid or expired token"
-        });
-    }
+  try {
+    const jwtVerified = jwt.verify(token, process.env.SECRET_ACCESS_TOKEN);
+    req.user = jwtVerified; // attach user info to req
+    next();
+  } catch (err) {
+    console.error("JWT Error:", err.message);
+    return res.status(401).json({
+      success: false,
+      message: "Invalid or expired access token",
+    });
+  }
 }
