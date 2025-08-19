@@ -285,81 +285,91 @@ export const oauthCallbackHandlerForSignUpMentor = async (req, res) => {
 
 
 export async function signIn(req, res) {
-    const { email, password } = req.body;
+  const { email, password } = req.body;
 
-    try {
-        // Step 1: Validate input
-        const { error } = signInSchema.validate({ email, password });
-        if (error) {
-            return res.status(400).json({
-                success: false,
-                field: error.details[0].context.key,
-                message: error.details[0].message
-            });
-        }
-
-        // Step 2: Find user
-        const existingUser = await UserModel.findOne({ email }).select("+password");
-        if (!existingUser) {
-            return res.status(401).json({
-                success: false,
-                field: 'email',
-                message: "User doesn't exist. Please sign up."
-            });
-        }
-
-        // Step 3: Check password
-        const isPasswordValid = await decryptHashedPassword(password, existingUser.password);
-        if (!isPasswordValid) {
-            return res.status(401).json({
-                success: false,
-                field: 'password',
-                message: "Invalid password"
-            });
-        }
-
-        // Optional: generate reset code if needed
-        const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
-
-        // Step 4: Generate access token with user info
-        const accessToken = jwt.sign(
-            {
-                userId: existingUser._id,
-                email: existingUser.email,
-                user_type: existingUser.user_type,
-                verified: existingUser.verified,
-                resetCode
-            },
-            process.env.SECRET_ACCESS_TOKEN,
-            { expiresIn: "30m" } // short-lived access token
-        );
-
-        // Step 5: Set cookie including all info inside the JWT
-        res.cookie("accessToken", accessToken, {
-            httpOnly: true,
-            sameSite: "strict",
-            maxAge: 3 * 60 * 60 * 1000, // 3 hours
-            secure: process.env.NODE_ENV === "production"
-        }).json({
-            success: true,
-            field: null,
-            message: "Logged in successfully",
-            // optional: also send the info outside cookie if needed
-            userId: existingUser._id,
-            user_type: existingUser.user_type,
-            email: existingUser.email,
-        });
-
-        console.log(`\nUser: ${existingUser._id}\nAccessToken: ${accessToken}\n${existingUser.user_type}`);
-
-    } catch (error) {
-        console.error("SignIn Error:", error);
-        res.status(500).json({
-            success: false,
-            field: null,
-            message: `Internal server error: ${error}`
-        });
+  try {
+    // Step 1: Validate input
+    const { error } = signInSchema.validate({ email, password });
+    if (error) {
+      return res.status(400).json({
+        success: false,
+        field: error.details[0].context.key,
+        message: error.details[0].message,
+      });
     }
+
+    // Step 2: Find user
+    const existingUser = await UserModel.findOne({ email }).select("+password");
+    if (!existingUser) {
+      return res.status(401).json({
+        success: false,
+        field: "email",
+        message: "User doesn't exist. Please sign up.",
+      });
+    }
+
+    // Step 3: Check password
+    const isPasswordValid = await decryptHashedPassword(password, existingUser.password);
+    if (!isPasswordValid) {
+      return res.status(401).json({
+        success: false,
+        field: "password",
+        message: "Invalid password",
+      });
+    }
+
+    // Step 4: Generate tokens
+    const accessToken = jwt.sign(
+      {
+        userId: existingUser._id,
+        email: existingUser.email,
+        user_type: existingUser.user_type,
+        verified: existingUser.verified,
+      },
+      process.env.SECRET_ACCESS_TOKEN,
+      { expiresIn: "30m" } // short-lived
+    );
+
+    const refreshToken = jwt.sign(
+      { userId: existingUser._id },
+      process.env.SECRET_REFRESH_TOKEN,
+      { expiresIn: "7d" } // long-lived
+    );
+
+    // Step 5: Set cookies
+    res.cookie("accessToken", accessToken, {
+      httpOnly: true,
+      sameSite: "strict",
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 30 * 60 * 1000, // 30 min
+    });
+
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      sameSite: "strict",
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+
+    // Step 6: Send response
+    res.json({
+      success: true,
+      message: "Logged in successfully",
+      userId: existingUser._id,
+      user_type: existingUser.user_type,
+      email: existingUser.email,
+    });
+
+    console.log(
+      `\nUser: ${existingUser._id}\nAccessToken: ${accessToken}\nRefreshToken: ${refreshToken}\nType: ${existingUser.user_type}`
+    );
+  } catch (error) {
+    console.error("SignIn Error:", error);
+    res.status(500).json({
+      success: false,
+      message: `Internal server error: ${error}`,
+    });
+  }
 }
 
 export async function refreshTokenHandler(req, res) {
