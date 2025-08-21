@@ -61,7 +61,6 @@ export const signUp = async (req, res) => {
                 field: null,
                 message: "🎉 Your account has been created successfully",
                 user: newUser._id,
-                accessToken: accessToken,
                 user_type: newUser.user_type
             })
             
@@ -142,7 +141,6 @@ export const signUpAsMentor = async (req, res) => {
                 field: null,
                 message: "🎉 Your account has been created successfully",
                 user: newUser._id,
-                accessToken: accessToken,
                 user_type: newUser.user_type
             })
             
@@ -355,9 +353,10 @@ export async function signIn(req, res) {
     res.json({
       success: true,
       message: "Logged in successfully",
+      accessToken: accessToken,
       userId: existingUser._id,
       user_type: existingUser.user_type,
-      email: existingUser.email,
+      email: existingUser.email, 
     });
 
     console.log(

@@ -42,8 +42,11 @@ export function identifier(req, res, next) {
         });
     }
 }
+ */
 
 
+
+/** 
 import jwt from 'jsonwebtoken';
 import dotenv from "dotenv";
 dotenv.config();
@@ -78,6 +81,8 @@ export function identifier(req, res, next) {
 }
  */
 
+
+/**   */
 import jwt from 'jsonwebtoken';
 import dotenv from "dotenv";
 dotenv.config();
