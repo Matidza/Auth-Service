@@ -24,6 +24,7 @@ export const signUp = async (req, res) => {
 
         // Check if email already exists
         const existingUser = await UserModel.findOne({ email });
+
         if (existingUser) {
             return res.status(409).json({
                 field: 'email',
@@ -31,10 +32,11 @@ export const signUp = async (req, res) => {
                 message: "Email already exists, try a different one."
             });
         }
+        
         // Hash the password
         const hashedPassword = await doHash(password, 12);
         // Create new user
-        const newUser = new UserModel({ email, password: hashedPassword, provider: 'local' });
+        const newUser = new UserModel({ email, password: hashedPassword, provider: 'local', user_type: user_type });
         const result = await newUser.save();
 
         result.password = undefined;
@@ -153,7 +155,7 @@ export const signUpAsMentor = async (req, res) => {
                 message: "🎉 Your account has been created successfully",
                 result
             }) */
-           ;
+           ;// 
            
     } catch (error) {
         console.error("SignUp Error:", error);
@@ -427,11 +429,17 @@ export async function refreshTokenHandler(req, res) {
 }
 
 export async function signOut(req, res) {
-    res.clearCookie("accessToken", {
+    res.clearCookie("accessToken", "refreshToken", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict"
+    }).clearCookie("refreshToken", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict"
     })//.redirect("http://localhost:3000/AUTH_MICROSERVICE/signup");
+
+    
   
     return res.status(200).json({
       success: true,

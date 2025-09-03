@@ -7,7 +7,7 @@ const router = express.Router();
 
 router.get('/all-posts', getAllPosts)
 router.post('/create-post', identifier, catchAsync(createPost))
-router.get('/single-page', identifier, catchAsync(individualPost))
+router.get('/single-page', catchAsync(individualPost))
 // Verify New users
 
 router.put('/update-post', identifier, catchAsync(updatePost))
